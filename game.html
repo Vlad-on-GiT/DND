@@ -618,7 +618,7 @@ async function askDM(userMessage) {
   setActionZone('');
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://dnd-proxy.vercel.app/api/proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
