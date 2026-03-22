@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Хранитель Свитков · Морровинд</title>
+<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ash:       #1a1410;
+    --ash-mid:   #221c15;
+    --ash-light: #2e2419;
+    --ember:     #c4622a;
+    --ember-dim: #8b3d18;
+    --amber:     #d4923a;
+    --amber-glow:#f0b84a;
+    --dust:      #e8d5b0;
+    --dust-dim:  #c4a97a;
+    --red-mist:  #7a2020;
+    --telvanni:  #4a3060;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--ash);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Crimson Pro', Georgia, serif;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 120% 55% at 50% 105%, rgba(196,98,42,0.20) 0%, transparent 65%),
+      radial-gradient(ellipse 70%  40% at 85%  5%,  rgba(74,48,96,0.16)  0%, transparent 60%),
+      radial-gradient(ellipse 55%  45% at 8%  35%,  rgba(122,32,32,0.12) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Шапка игрока ── */
+  #player-bar {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 780px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px 0;
+    gap: 12px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  #player-bar.visible { opacity: 1; }
+
+  .player-name {
+    color: var(--dust-dim);
+    font-size: 14px;
+    font-style: italic;
+    opacity: 0.75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .player-name span { color: var(--amber); font-style: normal; }
+
+  .logout-btn {
+    background: transparent;
+    border: 1px solid rgba(196,98,42,0.28);
+    border-radius: 6px;
+    color: var(--dust-dim);
+    font-family: 'Crimson Pro', serif;
+    font-size: 13px;
+    padding: 5px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+  .logout-btn:hover { border-color: var(--ember); color: var(--dust); opacity: 1; }
+
+  /* ── Основной контейнер ── */
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 780px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0 16px 28px;
+  }
+
+  header {
+    text-align: center;
+    padding: 20px 0 18px;
+    margin-bottom: 4px;
+  }
+
+  header::after {
+    content: '';
+    display: block;
+    margin: 14px auto 0;
+    width: 260px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--ember), var(--amber), var(--ember), transparent);
+  }
+
+  header h1 {
+    font-family: 'Uncial Antiqua', serif;
+    font-size: clamp(20px, 4.5vw, 32px);
+    color: var(--amber-glow);
+    text-shadow: 0 0 28px rgba(212,146,58,0.55), 0 2px 6px rgba(0,0,0,0.9);
+    letter-spacing: 0.04em;
+  }
+
+  header p {
+    font-size: 14px;
+    color: var(--dust-dim);
+    margin-top: 7px;
+    font-style: italic;
+    opacity: 0.75;
+  }
+
+  #story-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    scroll-behavior: smooth;
+  }
+
+  #story-log::-webkit-scrollbar { width: 3px; }
+  #story-log::-webkit-scrollbar-track { background: transparent; }
+  #story-log::-webkit-scrollbar-thumb { background: rgba(196,98,42,0.35); border-radius: 2px; }
+
+  .message { animation: rise 0.45s ease both; }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .dm-block {
+    background: linear-gradient(160deg, rgba(46,36,25,0.85) 0%, rgba(34,28,21,0.70) 100%);
+    border: 1px solid rgba(196,98,42,0.28);
+    border-left: 3px solid var(--ember);
+    border-radius: 2px 10px 10px 2px;
+    padding: 18px 22px;
+    position: relative;
+  }
+
+  .dm-block::before {
+    content: '⸸';
+    position: absolute;
+    top: -11px;
+    left: 14px;
+    font-size: 15px;
+    background: var(--ash-mid);
+    padding: 0 7px;
+    color: var(--ember);
+  }
+
+  .dm-text {
+    color: var(--dust);
+    font-size: 19px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+  }
+
+  .player-block {
+    align-self: flex-end;
+    max-width: 78%;
+    background: rgba(74,48,96,0.2);
+    border: 1px solid rgba(74,48,96,0.45);
+    border-right: 3px solid var(--telvanni);
+    border-radius: 10px 2px 2px 10px;
+    padding: 13px 17px;
+  }
+
+  .player-text {
+    color: rgba(232,213,176,0.82);
+    font-size: 17px;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .dice-result {
+    background: linear-gradient(135deg, rgba(196,98,42,0.16), rgba(139,61,24,0.10));
+    border: 1px solid rgba(196,98,42,0.55);
+    border-radius: 10px;
+    padding: 16px 22px;
+    text-align: center;
+    color: var(--amber-glow);
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 16px;
+  }
+
+  .dice-result .roll-number {
+    font-size: 48px;
+    display: block;
+    margin: 8px 0 4px;
+    text-shadow: 0 0 20px rgba(212,146,58,0.8);
+  }
+
+  #action-zone {
+    padding-top: 14px;
+    border-top: 1px solid rgba(196,98,42,0.22);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .action-btn {
+    background: linear-gradient(135deg, rgba(46,36,25,0.9) 0%, rgba(34,28,21,0.75) 100%);
+    border: 1px solid rgba(196,98,42,0.32);
+    border-radius: 7px;
+    color: var(--dust);
+    font-family: 'Crimson Pro', serif;
+    font-size: 18px;
+    padding: 13px 20px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.22s ease;
+    line-height: 1.45;
+  }
+
+  .action-btn:hover {
+    background: linear-gradient(135deg, rgba(196,98,42,0.22) 0%, rgba(139,61,24,0.14) 100%);
+    border-color: var(--amber);
+    color: var(--amber-glow);
+    transform: translateX(5px);
+    box-shadow: -4px 0 12px rgba(196,98,42,0.18);
+  }
+
+  .action-btn:active { transform: translateX(3px) scale(0.99); }
+
+  .btn-icon { margin-right: 10px; color: var(--ember); }
+
+  .dice-btn {
+    background: linear-gradient(135deg, rgba(122,32,32,0.3) 0%, rgba(90,20,20,0.2) 100%);
+    border: 1px solid rgba(196,98,42,0.55);
+    border-radius: 7px;
+    color: #ffcba0;
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 16px;
+    padding: 15px 20px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.22s ease;
+    letter-spacing: 0.04em;
+  }
+
+  .dice-btn:hover {
+    background: linear-gradient(135deg, rgba(196,98,42,0.35) 0%, rgba(139,61,24,0.25) 100%);
+    border-color: var(--ember);
+    box-shadow: 0 0 22px rgba(196,98,42,0.38);
+    transform: scale(1.01);
+  }
+
+  .typing-indicator {
+    display: none;
+    padding: 14px 20px;
+    color: rgba(196,98,42,0.65);
+    font-style: italic;
+    font-size: 17px;
+  }
+  .typing-indicator.visible { display: block; }
+
+  .dot { display: inline-block; animation: blink 1.3s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.3s; }
+  .dot:nth-child(3) { animation-delay: 0.6s; }
+
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0.15; }
+    40%           { opacity: 1; }
+  }
+
+  /* ── Индикатор автосохранения ── */
+  #save-indicator {
+    font-size: 12px;
+    color: var(--dust-dim);
+    opacity: 0;
+    transition: opacity 0.4s;
+    font-style: italic;
+    text-align: right;
+    padding: 4px 0 0;
+  }
+  #save-indicator.visible { opacity: 0.5; }
+
+  /* ── Стартовый экран ── */
+  #start-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 28px;
+    text-align: center;
+    transition: opacity 0.9s ease;
+    background:
+      radial-gradient(ellipse 90% 65% at 50% 90%, rgba(196,98,42,0.24) 0%, transparent 65%),
+      radial-gradient(ellipse 55% 35% at 75% 8%,  rgba(74,48,96,0.18)  0%, transparent 55%),
+      var(--ash);
+  }
+
+  #start-screen.hiding { opacity: 0; pointer-events: none; }
+
+  .start-emblem {
+    font-size: 82px;
+    line-height: 1;
+    animation: breathe 3.5s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%,100% { filter: drop-shadow(0 0 12px rgba(196,98,42,0.35)); transform: scale(1); }
+    50%     { filter: drop-shadow(0 0 38px rgba(212,146,58,0.75)); transform: scale(1.04); }
+  }
+
+  .start-title {
+    font-family: 'Uncial Antiqua', serif;
+    font-size: clamp(26px, 5.5vw, 42px);
+    color: var(--amber-glow);
+    text-shadow: 0 0 32px rgba(212,146,58,0.55);
+    line-height: 1.2;
+  }
+
+  .start-player-name {
+    color: var(--amber);
+    font-size: 18px;
+    font-style: italic;
+    opacity: 0.9;
+    min-height: 24px;
+  }
+
+  .ornament {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: var(--ember-dim);
+    font-size: 18px;
+    opacity: 0.7;
+  }
+  .ornament::before, .ornament::after {
+    content: '';
+    flex: 1;
+    max-width: 80px;
+    height: 1px;
+  }
+  .ornament::before { background: linear-gradient(90deg,  transparent, var(--ember)); }
+  .ornament::after  { background: linear-gradient(270deg, transparent, var(--ember)); }
+
+  .start-lore {
+    color: var(--dust-dim);
+    font-size: 17px;
+    max-width: 420px;
+    line-height: 1.75;
+    font-style: italic;
+    opacity: 0.88;
+  }
+
+  .start-btn {
+    background: linear-gradient(135deg, rgba(196,98,42,0.25), rgba(139,61,24,0.15));
+    border: 1px solid var(--ember);
+    border-radius: 8px;
+    color: var(--amber-glow);
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 18px;
+    padding: 15px 42px;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 0.06em;
+    margin-top: 6px;
+  }
+
+  .start-btn:hover {
+    background: linear-gradient(135deg, rgba(196,98,42,0.42), rgba(139,61,24,0.28));
+    box-shadow: 0 0 30px rgba(196,98,42,0.48);
+    transform: scale(1.04);
+  }
+
+  /* ── Экран загрузки (пока Firebase проверяет сессию) ── */
+  #auth-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ash);
+    transition: opacity 0.5s ease;
+  }
+  #auth-loading.hidden { opacity: 0; pointer-events: none; }
+  .loading-emblem { font-size: 56px; animation: breathe 2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<!-- Экран загрузки — скрывается после проверки сессии -->
+<div id="auth-loading">
+  <div class="loading-emblem">🌋</div>
+</div>
+
+<!-- Шапка с именем игрока и кнопкой выхода -->
+<div id="player-bar">
+  <div class="player-name" id="player-name-label">Странник</div>
+  <button class="logout-btn" id="logout-btn">✦ Покинуть мир</button>
+</div>
+
+<!-- Стартовый экран -->
+<div id="start-screen">
+  <div class="start-emblem">🌋</div>
+  <div class="start-title">Хранитель Свитков</div>
+  <div class="start-player-name" id="start-player-greeting"></div>
+  <div class="ornament">⸸ Морровинд ⸸</div>
+  <div class="start-lore">
+    Ты прибыл на имперском корабле в Сейда Нин — портовый город на краю пепельных земель Вварденфелла.
+    Красные горы, грибные леса, руины древних Двемеров. Здесь всё чужое. Здесь всё опасно.
+  </div>
+  <button class="start-btn" id="start-btn" onclick="startGame()">⚔ Ступить на берег ⚔</button>
+</div>
+
+<div class="container">
+  <header>
+    <h1>⸸ Хранитель Свитков · Вварденфелл ⸸</h1>
+    <p>Морровинд · Пепельные земли · Приключение начинающего странника</p>
+  </header>
+
+  <div id="story-log"></div>
+
+  <div class="typing-indicator" id="typing">
+    Хранитель свитков думает<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+  </div>
+
+  <div id="action-zone"></div>
+  <div id="save-indicator">📜 Сохранено в летописях</div>
+</div>
+
+<script type="module">
+import { initializeApp }                              from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut }       from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import firebaseConfig                                 from "./firebase-config.js";
+
+// ── Firebase init ────────────────────────────────────────
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── Состояние ────────────────────────────────────────────
+const state = {
+  history:        [],
+  diceNotation:   null,
+  diceReason:     null,
+  waitingForDice: false,
+  currentActions: [],
+  locked:         false,
+  uid:            null,
+  gameId:         'session_' + Date.now(),
+  playerName:     'Странник',
+};
+
+// ── Auth guard: ждём Firebase, потом показываем игру ─────
+onAuthStateChanged(auth, user => {
+  const loading = document.getElementById('auth-loading');
+
+  if (!user) {
+    // Не авторизован — на главную
+    window.location.href = 'index.html';
+    return;
+  }
+
+  state.uid        = user.uid;
+  state.playerName = user.displayName || (user.isAnonymous ? 'Безымянный странник' : user.email?.split('@')[0] || 'Странник');
+
+  // Показываем имя в шапке и на стартовом экране
+  const label    = document.getElementById('player-name-label');
+  const greeting = document.getElementById('start-player-greeting');
+  if (label)    label.innerHTML    = `Сера <span>${state.playerName}</span>`;
+  if (greeting) greeting.textContent = `Приветствуем тебя, ${state.playerName}`;
+
+  document.getElementById('player-bar').classList.add('visible');
+
+  // Убираем экран загрузки
+  loading.classList.add('hidden');
+  setTimeout(() => loading.remove(), 600);
+});
+
+// ── Выход ────────────────────────────────────────────────
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await signOut(auth);
+  window.location.href = 'index.html';
+});
+
+// ── Автосохранение в Firestore ───────────────────────────
+async function saveProgress() {
+  if (!state.uid || state.history.length === 0) return;
+  try {
+    await setDoc(
+      doc(db, 'players', state.uid, 'games', state.gameId),
+      {
+        gameId:    state.gameId,
+        title:     'Морровинд · ' + new Date().toLocaleDateString('ru'),
+        history:   state.history,
+        savedAt:   serverTimestamp(),
+      }
+    );
+    showSaveIndicator();
+  } catch (e) {
+    console.warn('Autosave failed:', e);
+  }
+}
+
+function showSaveIndicator() {
+  const el = document.getElementById('save-indicator');
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 2500);
+}
+
+// ── Игровая логика ───────────────────────────────────────
+const SYSTEM_PROMPT = `Ты — опытный Хранитель Свитков (аналог Dungeon Master), ведущий приключение в мире TES III: Morrowind. Ты ведёшь игру для абсолютного новичка, который ничего не знает ни о DnD, ни о Морровинде.
+
+МИР И АТМОСФЕРА:
+- Остров Вварденфелл: серые пепельные равнины, исполинские грибы-деревья, руины Двемеров (древнего исчезнувшего народа), башни Телванни из живого гриба, даэдрические святилища.
+- Народы: Данмеры (тёмные эльфы) — суровые хозяева острова; Имперцы — завоеватели с запада; Аргониане, Хаджиты и другие.
+- Великие Дома: Телванни (маги), Хлаалу (торговцы), Редоран (воины), Индорил (жрецы).
+- Боги острова: Трибунал — три живых бога Данмеров. Красная гора на севере источает ядовитый Пепельный шторм.
+- Атмосфера: загадочная, тревожная, прекрасная. Что-то древнее дышит под пеплом.
+
+ПРАВИЛА:
+1. ВСЕГДА заканчивай ответ блоком выбора или броском кубика — никогда не заканчивай на открытом вопросе.
+2. Давай 3 варианта действия (иногда 2 или 4).
+3. Язык — русский, атмосферный, с данмерскими словами: "н'вах" (чужак, презрительно), "сера" (уважительное обращение), "дунмер" (тёмный эльф), "трибунал славный". Объясняй новые слова в скобках при первом употреблении.
+4. Кратко объясняй механику броска кубика, когда он нужен.
+5. Данмеры недоверчивы к чужакам. Мир реагирует на выборы игрока.
+6. Персонаж — чужак, только что высадившийся в Сейда Нин.
+
+ФОРМАТ — строго валидный JSON без markdown:
+{
+  "story": "Текст повествования. 3-6 предложений, атмосферный.",
+  "type": "choice" | "dice",
+  "actions": ["Вариант 1", "Вариант 2", "Вариант 3"],
+  "dice": { "notation": "1d20", "reason": "Название проверки" }
+}
+
+Для type="dice" поле actions не нужно. Для type="choice" поле dice не нужно.
+Нотации: 1d20 (навыки, атака), 2d6 (урон), 1d8 (тяжёлое оружие), 1d4 (кинжал).
+ОТВЕЧАЙ ТОЛЬКО ВАЛИДНЫМ JSON.`;
+
+const log        = document.getElementById('story-log');
+const actionZone = document.getElementById('action-zone');
+const typing     = document.getElementById('typing');
+
+function scrollBottom() { setTimeout(() => log.scrollTop = log.scrollHeight, 60); }
+function showTyping(v)  { typing.classList.toggle('visible', v); }
+
+function addDMMessage(text) {
+  const d = document.createElement('div');
+  d.className = 'message dm-block';
+  d.innerHTML = `<div class="dm-text">${text}</div>`;
+  log.appendChild(d);
+  scrollBottom();
+}
+
+function addPlayerMessage(text) {
+  const d = document.createElement('div');
+  d.className = 'message player-block';
+  d.innerHTML = `<div class="player-text">↳ ${text}</div>`;
+  log.appendChild(d);
+  scrollBottom();
+}
+
+function addDiceResult(notation, result, reason) {
+  const d = document.createElement('div');
+  d.className = 'message dice-result';
+  d.innerHTML = `🎲 ${reason}<br><span class="roll-number">${result}</span><small style="opacity:0.65">${notation}</small>`;
+  log.appendChild(d);
+  scrollBottom();
+}
+
+function setActionZone(html) { actionZone.innerHTML = html; scrollBottom(); }
+
+function rollDice(notation) {
+  const m = notation.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  if (!m) return Math.floor(Math.random() * 20) + 1;
+  const n = +m[1], s = +m[2], mod = m[3] ? +m[3] : 0;
+  let t = 0;
+  for (let i = 0; i < n; i++) t += Math.floor(Math.random() * s) + 1;
+  return t + mod;
+}
+
+async function askDM(userMessage) {
+  if (state.locked) return;
+  state.locked = true;
+
+  if (userMessage) state.history.push({ role: 'user', content: userMessage });
+
+  showTyping(true);
+  setActionZone('');
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model:      'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        system:     SYSTEM_PROMPT,
+        messages:   state.history
+      })
+    });
+
+    const data = await resp.json();
+    const raw  = data.content?.[0]?.text || '{}';
+
+    let parsed;
+    try {
+      const clean = raw.replace(/```json?\s*/gi, '').replace(/```\s*/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch {
+      parsed = { story: raw, type: 'choice', actions: ['Продолжить...'] };
+    }
+
+    state.history.push({ role: 'assistant', content: raw });
+    showTyping(false);
+    addDMMessage(parsed.story || '...');
+    renderActions(parsed);
+
+    // Автосохранение после каждого ответа ведущего
+    saveProgress();
+
+  } catch (err) {
+    showTyping(false);
+    addDMMessage('⚠ Связь с Хранителем Свитков прервана. Духи-предки молчат...');
+    setActionZone(`<button class="action-btn" onclick="window._retryLast()"><span class="btn-icon">🔄</span>Попробовать снова</button>`);
+  }
+
+  state.locked = false;
+}
+
+function renderActions(parsed) {
+  const { type, actions, dice } = parsed;
+  const icons = ['⚔', '👁', '💬', '🏃', '🗺', '🧿', '🛡', '🤝'];
+  let html = '<div class="btn-group">';
+
+  if (type === 'dice') {
+    state.waitingForDice = true;
+    state.diceNotation   = dice?.notation || '1d20';
+    state.diceReason     = dice?.reason   || 'Бросок';
+    html += `<button class="dice-btn" onclick="window._handleDiceRoll()">
+      🎲 Бросить кубик — ${state.diceReason} (${state.diceNotation})
+    </button>`;
+  } else if (actions?.length) {
+    state.currentActions = actions;
+    actions.forEach((a, i) => {
+      html += `<button class="action-btn" onclick="window._handleChoice(${i})">
+        <span class="btn-icon">${icons[i % icons.length]}</span>${a}
+      </button>`;
+    });
+  }
+
+  html += '</div>';
+  setActionZone(html);
+}
+
+// Выносим в window чтобы onclick в innerHTML мог вызвать
+window._handleChoice = (i) => {
+  const action = state.currentActions?.[i];
+  if (!action || state.locked) return;
+  addPlayerMessage(action);
+  askDM(`Я выбираю: ${action}`);
+};
+
+window._handleDiceRoll = () => {
+  if (!state.waitingForDice || state.locked) return;
+  const notation = state.diceNotation;
+  const reason   = state.diceReason;
+  const result   = rollDice(notation);
+  state.waitingForDice = false;
+  addDiceResult(notation, result, reason);
+  askDM(`Я бросил ${notation} для "${reason}" и выпало: ${result}`);
+};
+
+window._retryLast = () => {
+  if (state.history.length && state.history[state.history.length - 1].role === 'assistant')
+    state.history.pop();
+  askDM(null);
+};
+
+window.startGame = () => {
+  const s = document.getElementById('start-screen');
+  s.classList.add('hiding');
+  setTimeout(() => s.remove(), 900);
+  const greeting = state.playerName !== 'Странник'
+    ? `Начни приключение. Меня зовут ${state.playerName}. Я только что высадился с имперского корабля в порту Сейда Нин. Обратись ко мне по имени в начале. Опиши первые минуты на берегу и дай мне выбор первого действия.`
+    : `Начни приключение. Я только что высадился с имперского корабля в порту Сейда Нин. Опиши первые минуты на берегу и дай мне выбор первого действия.`;
+  askDM(greeting);
+};
+</script>
+</body>
+</html>
