@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Хранитель Свитков · Войти в мир</title>
+<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ash:        #1a1410;
+    --ash-mid:    #221c15;
+    --ash-light:  #2e2419;
+    --ember:      #c4622a;
+    --ember-dim:  #8b3d18;
+    --amber:      #d4923a;
+    --amber-glow: #f0b84a;
+    --dust:       #e8d5b0;
+    --dust-dim:   #c4a97a;
+    --red-mist:   #7a2020;
+    --telvanni:   #4a3060;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--ash);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Crimson Pro', Georgia, serif;
+    overflow-x: hidden;
+  }
+
+  /* ── Атмосферный фон ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 130% 60% at 50% 110%, rgba(196,98,42,0.22) 0%, transparent 60%),
+      radial-gradient(ellipse 60%  40% at 88%  5%,  rgba(74,48,96,0.18)  0%, transparent 55%),
+      radial-gradient(ellipse 50%  45% at 5%  40%,  rgba(122,32,32,0.14) 0%, transparent 55%),
+      radial-gradient(ellipse 40%  30% at 50% 50%,  rgba(196,98,42,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Зернистая текстура ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── Верхний орнамент ── */
+  .top-border {
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--red-mist), var(--ember), var(--amber-glow), var(--ember), var(--red-mist), transparent);
+  }
+
+  /* ── Героическая секция ── */
+  .hero {
+    width: 100%;
+    max-width: 820px;
+    padding: 60px 24px 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .emblem {
+    font-size: 96px;
+    animation: breathe 3.8s ease-in-out infinite;
+    line-height: 1;
+  }
+
+  @keyframes breathe {
+    0%,100% { filter: drop-shadow(0 0 14px rgba(196,98,42,0.4)); transform: scale(1); }
+    50%     { filter: drop-shadow(0 0 44px rgba(212,146,58,0.85)); transform: scale(1.04); }
+  }
+
+  .hero-title {
+    font-family: 'Uncial Antiqua', serif;
+    font-size: clamp(28px, 6vw, 52px);
+    color: var(--amber-glow);
+    text-shadow: 0 0 40px rgba(212,146,58,0.5), 0 3px 8px rgba(0,0,0,0.9);
+    letter-spacing: 0.05em;
+    line-height: 1.15;
+  }
+
+  .hero-sub {
+    font-family: 'Uncial Antiqua', serif;
+    font-size: clamp(13px, 2.5vw, 18px);
+    color: var(--ember);
+    letter-spacing: 0.12em;
+    opacity: 0.8;
+    text-transform: uppercase;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+  }
+  .divider::before { background: linear-gradient(90deg, transparent, var(--ember)); }
+  .divider::after  { background: linear-gradient(270deg, transparent, var(--ember)); }
+  .divider-glyph   { color: var(--ember); font-size: 16px; opacity: 0.7; }
+
+  .hero-lore {
+    color: var(--dust-dim);
+    font-size: clamp(16px, 2.2vw, 19px);
+    max-width: 500px;
+    line-height: 1.8;
+    font-style: italic;
+    opacity: 0.9;
+  }
+
+  /* ── Секция с преимуществами ── */
+  .features {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 720px;
+    padding: 0 24px;
+    margin-bottom: 48px;
+  }
+
+  .feature-card {
+    background: linear-gradient(155deg, rgba(46,36,25,0.7) 0%, rgba(26,20,16,0.5) 100%);
+    border: 1px solid rgba(196,98,42,0.22);
+    border-radius: 10px;
+    padding: 20px 22px;
+    flex: 1;
+    min-width: 180px;
+    max-width: 210px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--ember), transparent);
+    transform: scaleX(0);
+    transition: transform 0.35s ease;
+  }
+
+  .feature-card:hover { border-color: rgba(196,98,42,0.5); transform: translateY(-3px); }
+  .feature-card:hover::before { transform: scaleX(1); }
+
+  .feature-icon { font-size: 32px; margin-bottom: 10px; display: block; }
+  .feature-title {
+    color: var(--amber);
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .feature-desc {
+    color: var(--dust-dim);
+    font-size: 14px;
+    line-height: 1.6;
+    opacity: 0.8;
+  }
+
+  /* ── Форма авторизации ── */
+  .auth-wrapper {
+    width: 100%;
+    max-width: 440px;
+    padding: 0 24px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .auth-card {
+    width: 100%;
+    background: linear-gradient(160deg, rgba(46,36,25,0.92) 0%, rgba(26,20,16,0.88) 100%);
+    border: 1px solid rgba(196,98,42,0.32);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(196,98,42,0.08) inset;
+    animation: cardRise 0.7s ease both;
+  }
+
+  @keyframes cardRise {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Переключатель вкладок */
+  .auth-tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(196,98,42,0.22);
+  }
+
+  .tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 18px;
+    color: var(--dust-dim);
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    opacity: 0.6;
+  }
+
+  .tab-btn.active {
+    color: var(--amber-glow);
+    opacity: 1;
+  }
+
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 20%; right: 20%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--amber-glow), transparent);
+  }
+
+  .tab-btn:hover:not(.active) { opacity: 0.9; color: var(--dust); }
+
+  /* Тело формы */
+  .auth-body {
+    padding: 32px 30px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .auth-panel { display: none; flex-direction: column; gap: 20px; }
+  .auth-panel.active { display: flex; }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field-label {
+    color: var(--dust-dim);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+
+  .field-input {
+    background: rgba(26,20,16,0.7);
+    border: 1px solid rgba(196,98,42,0.28);
+    border-radius: 7px;
+    padding: 13px 16px;
+    color: var(--dust);
+    font-family: 'Crimson Pro', serif;
+    font-size: 17px;
+    outline: none;
+    transition: all 0.25s;
+    width: 100%;
+  }
+
+  .field-input::placeholder { color: rgba(196,156,106,0.3); }
+
+  .field-input:focus {
+    border-color: var(--amber);
+    background: rgba(30,24,18,0.9);
+    box-shadow: 0 0 0 3px rgba(196,98,42,0.12), 0 0 18px rgba(196,98,42,0.1);
+  }
+
+  .field-input:focus + .field-glow { opacity: 1; }
+
+  /* Основная кнопка */
+  .submit-btn {
+    background: linear-gradient(135deg, rgba(196,98,42,0.3), rgba(139,61,24,0.2));
+    border: 1px solid var(--ember);
+    border-radius: 8px;
+    color: var(--amber-glow);
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 18px;
+    padding: 16px 24px;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 0.06em;
+    width: 100%;
+    margin-top: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .submit-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(240,184,74,0.12), transparent);
+    transition: left 0.5s;
+  }
+
+  .submit-btn:hover {
+    background: linear-gradient(135deg, rgba(196,98,42,0.48), rgba(139,61,24,0.32));
+    box-shadow: 0 0 35px rgba(196,98,42,0.5);
+    transform: scale(1.02);
+  }
+  .submit-btn:hover::before { left: 100%; }
+  .submit-btn:active { transform: scale(0.99); }
+
+  /* Разделитель "или" */
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--dust-dim);
+    font-size: 13px;
+    opacity: 0.45;
+    letter-spacing: 0.06em;
+  }
+  .or-divider::before, .or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(196,98,42,0.25);
+  }
+
+  /* Кнопка гостя */
+  .google-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 8px;
+    color: var(--dust);
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    padding: 13px 24px;
+    cursor: pointer;
+    transition: all 0.25s;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .google-btn:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.3);
+  }
+  .google-btn:disabled, .submit-btn:disabled, .guest-btn:disabled {
+    cursor: not-allowed;
+  }
+
+  .guest-btn {
+    background: transparent;
+    border: 1px solid rgba(74,48,96,0.5);
+    border-radius: 8px;
+    color: rgba(180,160,210,0.75);
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    padding: 13px 24px;
+    cursor: pointer;
+    transition: all 0.25s;
+    width: 100%;
+    font-style: italic;
+  }
+  .guest-btn:hover {
+    border-color: var(--telvanni);
+    color: rgba(200,180,230,0.9);
+    background: rgba(74,48,96,0.15);
+  }
+
+  .auth-hint {
+    color: var(--dust-dim);
+    font-size: 13px;
+    text-align: center;
+    opacity: 0.5;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* ── Нижний колонтитул ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    border-top: 1px solid rgba(196,98,42,0.15);
+    padding: 20px 24px;
+    text-align: center;
+    color: var(--dust-dim);
+    font-size: 13px;
+    opacity: 0.45;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Сообщение об ошибке/успехе ── */
+  .form-msg {
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    display: none;
+    text-align: center;
+    font-style: italic;
+  }
+  .form-msg.error  { background: rgba(122,32,32,0.25); border: 1px solid rgba(196,98,42,0.4); color: #ffaa88; display: block; }
+  .form-msg.success{ background: rgba(40,80,40,0.25);  border: 1px solid rgba(80,160,80,0.35); color: #a8e0a8; display: block; }
+
+  /* Мерцающие частицы пепла */
+  .sparks {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .spark {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: var(--amber-glow);
+    border-radius: 50%;
+    opacity: 0;
+    animation: float var(--dur) linear infinite;
+    animation-delay: var(--delay);
+    left: var(--x);
+  }
+  @keyframes float {
+    0%   { bottom: -10px; opacity: 0; transform: translateX(0); }
+    10%  { opacity: 0.6; }
+    90%  { opacity: 0.3; }
+    100% { bottom: 100vh; opacity: 0; transform: translateX(var(--drift)); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Искры пепла -->
+<div class="sparks" id="sparks"></div>
+
+<div class="page">
+  <div class="top-border"></div>
+
+  <!-- Героическая шапка -->
+  <section class="hero">
+    <div class="emblem">🌋</div>
+    <div class="hero-sub">Добро пожаловать в</div>
+    <h1 class="hero-title">Хранитель Свитков</h1>
+
+    <div class="divider"><span class="divider-glyph">⸸</span></div>
+
+    <p class="hero-lore">
+      Врата в пепельные земли Вварденфелла открыты.<br>
+      Тысячи странников уже ступили на этот берег.<br>
+      Твоя история ещё не написана.
+    </p>
+  </section>
+
+  <!-- Три преимущества -->
+  <div class="features">
+    <div class="feature-card">
+      <span class="feature-icon">🤖</span>
+      <div class="feature-title">Живой ведущий</div>
+      <div class="feature-desc">Нейросеть создаёт уникальное приключение для каждого игрока</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📜</span>
+      <div class="feature-title">Твоя история</div>
+      <div class="feature-desc">Каждый выбор меняет мир. Сохраняй и продолжай своё приключение</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🎲</span>
+      <div class="feature-title">Механика DnD</div>
+      <div class="feature-desc">Броски кубиков, навыки, случайность — всё как в настольной игре</div>
+    </div>
+  </div>
+
+  <!-- Форма авторизации -->
+  <div class="auth-wrapper">
+    <div class="auth-card">
+
+      <div class="auth-tabs">
+        <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">⚔ Войти</button>
+        <button class="tab-btn" id="tab-register" onclick="switchTab('register')">✦ Создать свиток</button>
+      </div>
+
+      <div class="auth-body">
+
+        <!-- Панель входа -->
+        <div class="auth-panel active" id="panel-login">
+          <div class="field-group">
+            <label class="field-label">Имя странника</label>
+            <input class="field-input" type="text" id="login-name" placeholder="Твоё имя или e-mail" autocomplete="username" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Тайное слово</label>
+            <input class="field-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" />
+          </div>
+          <div class="form-msg" id="login-msg"></div>
+          <button class="submit-btn" id="btn-login" onclick="handleLogin()">⸸ Переступить порог ⸸</button>
+          <div class="or-divider">или</div>
+          <button class="google-btn" id="btn-google" onclick="handleGoogle()">
+            <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            Войти через Google
+          </button>
+          <button class="guest-btn" id="btn-guest" onclick="handleGuest()">🧳 Войти как безымянный странник</button>
+        </div>
+
+        <!-- Панель регистрации -->
+        <div class="auth-panel" id="panel-register">
+          <div class="field-group">
+            <label class="field-label">Имя персонажа</label>
+            <input class="field-input" type="text" id="reg-name" placeholder="Имя, которым тебя назовут в мире" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Электронный свиток (e-mail)</label>
+            <input class="field-input" type="email" id="reg-email" placeholder="твой@почта.ру" autocomplete="email" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Тайное слово</label>
+            <input class="field-input" type="password" id="reg-pass" placeholder="Не менее 6 рун" autocomplete="new-password" />
+          </div>
+          <div class="form-msg" id="reg-msg"></div>
+          <button class="submit-btn" id="btn-register" onclick="handleRegister()">✦ Вписать имя в летописи ✦</button>
+        </div>
+
+      </div>
+    </div>
+    <p class="auth-hint">Твои данные хранятся под защитой духов-хранителей</p>
+  </div>
+</div>
+
+<footer>⸸ Хранитель Свитков · Вварденфелл · Пепельные Земли ⸸</footer>
+
+<script type="module">
+  import { registerWithEmail, loginWithEmail,
+           loginWithGoogle, loginAsGuest,
+           onAuthChange } from "./auth.js";
+
+  // ── Редирект если уже вошёл ──────────────────────────────
+  onAuthChange(user => {
+    if (user) window.location.href = "game.html";
+  });
+
+  // ── Переключение вкладок ─────────────────────────────────
+  window.switchTab = function(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+    clearMessages();
+  };
+
+  function clearMessages() {
+    document.querySelectorAll('.form-msg').forEach(m => {
+      m.className = 'form-msg';
+      m.textContent = '';
+    });
+  }
+
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    el.className = 'form-msg ' + type;
+    el.textContent = text;
+  }
+
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.style.opacity = loading ? '0.6' : '1';
+  }
+
+  // ── Карта ошибок Firebase → человеческий текст ──────────
+  function firebaseError(code) {
+    const map = {
+      'auth/user-not-found':       'Странник с таким именем не найден в летописях.',
+      'auth/wrong-password':       'Неверное тайное слово. Попробуй ещё раз.',
+      'auth/invalid-credential':   'Неверный e-mail или пароль.',
+      'auth/email-already-in-use': 'Этот e-mail уже вписан в летописи. Войди через «Войти».',
+      'auth/weak-password':        'Тайное слово слишком слабое. Нужно не менее 6 рун.',
+      'auth/invalid-email':        'Укажи верный электронный свиток.',
+      'auth/popup-closed-by-user': 'Окно Google закрыто. Попробуй снова.',
+      'auth/network-request-failed':'Нет связи с духами-хранителями. Проверь соединение.',
+    };
+    return map[code] || 'Нечто пошло не так. Попробуй позже.';
+  }
+
+  // ── Вход по email ────────────────────────────────────────
+  window.handleLogin = async function() {
+    const email = document.getElementById('login-name').value.trim();
+    const pass  = document.getElementById('login-pass').value;
+    clearMessages();
+
+    if (!email) { showMsg('login-msg', 'Укажи e-mail, н\'вах.', 'error'); return; }
+    if (!pass)  { showMsg('login-msg', 'Тайное слово не может быть пустым.', 'error'); return; }
+
+    setLoading('btn-login', true);
+    try {
+      await loginWithEmail(email, pass);
+      // редирект произойдёт автоматически через onAuthChange
+    } catch(e) {
+      showMsg('login-msg', firebaseError(e.code), 'error');
+      setLoading('btn-login', false);
+    }
+  };
+
+  // ── Регистрация ──────────────────────────────────────────
+  window.handleRegister = async function() {
+    const name  = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const pass  = document.getElementById('reg-pass').value;
+    clearMessages();
+
+    if (!name)               { showMsg('reg-msg', 'Имя странника не может быть пустым.', 'error'); return; }
+    if (!email.includes('@')) { showMsg('reg-msg', 'Укажи верный электронный свиток.', 'error'); return; }
+    if (pass.length < 6)     { showMsg('reg-msg', 'Тайное слово слишком короткое. Нужно не менее 6 рун.', 'error'); return; }
+
+    setLoading('btn-register', true);
+    try {
+      await registerWithEmail(name, email, pass);
+    } catch(e) {
+      showMsg('reg-msg', firebaseError(e.code), 'error');
+      setLoading('btn-register', false);
+    }
+  };
+
+  // ── Вход через Google ────────────────────────────────────
+  window.handleGoogle = async function() {
+    clearMessages();
+    setLoading('btn-google', true);
+    try {
+      await loginWithGoogle();
+    } catch(e) {
+      showMsg('login-msg', firebaseError(e.code), 'error');
+      setLoading('btn-google', false);
+    }
+  };
+
+  // ── Гость ────────────────────────────────────────────────
+  window.handleGuest = async function() {
+    clearMessages();
+    setLoading('btn-guest', true);
+    try {
+      await loginAsGuest();
+    } catch(e) {
+      showMsg('login-msg', firebaseError(e.code), 'error');
+      setLoading('btn-guest', false);
+    }
+  };
+
+  // ── Enter в полях ────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const panel = document.querySelector('.auth-panel.active');
+    if (panel?.id === 'panel-login')    window.handleLogin();
+    if (panel?.id === 'panel-register') window.handleRegister();
+  });
+
+  // ── Искры пепла ─────────────────────────────────────────
+  (function spawnSparks() {
+    const container = document.getElementById('sparks');
+    for (let i = 0; i < 22; i++) {
+      const s = document.createElement('div');
+      s.className = 'spark';
+      s.style.setProperty('--x',     Math.random() * 100 + 'vw');
+      s.style.setProperty('--dur',   (8 + Math.random() * 14) + 's');
+      s.style.setProperty('--delay', (Math.random() * 18) + 's');
+      s.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
+      if (Math.random() > 0.65) {
+        s.style.width = s.style.height = '3px';
+        s.style.background = 'var(--ember)';
+        s.style.boxShadow = '0 0 4px rgba(196,98,42,0.8)';
+      }
+      container.appendChild(s);
+    }
+  })();
+</script>
+</body>
+</html>
