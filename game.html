@@ -3,38 +3,121 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Хранитель Свитков</title>
-<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<title>Врата Миров</title>
+<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400;1,600&family=MedievalSharp&family=Cinzel:wght@400;600&family=Raleway:wght@300;400;600&family=Special+Elite&family=Orbitron:wght@400;600&family=Caveat:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
+  /* ══ НЕЙТРАЛЬНАЯ ТЕМА (до выбора мира) ══ */
   :root {
-    --ash:       #1a1410;
-    --ash-mid:   #221c15;
-    --ember:     #c4622a;
-    --ember-dim: #8b3d18;
-    --amber:     #d4923a;
-    --amber-glow:#f0b84a;
-    --dust:      #e8d5b0;
-    --dust-dim:  #c4a97a;
-    --telvanni:  #4a3060;
+    --bg:        #0e0e14;
+    --bg-mid:    #16161f;
+    --accent:    #5a5aaa;
+    --accent2:   #7a7acc;
+    --accent-glow:#9999ee;
+    --text:      #e0e0f0;
+    --text-dim:  #9090b0;
+    --card-bg:   rgba(30,30,50,0.85);
+    --border:    rgba(100,100,180,0.25);
+    --glow1: rgba(80,80,160,0.2);
+    --glow2: rgba(40,40,100,0.15);
+    --glow3: rgba(60,60,120,0.12);
+    --font-title: 'Cinzel', serif;
+    --font-body:  'Raleway', sans-serif;
+    /* legacy aliases */
+    --ash:       var(--bg);
+    --ash-mid:   var(--bg-mid);
+    --ember:     var(--accent);
+    --ember-dim: var(--accent2);
+    --amber:     var(--accent2);
+    --amber-glow:var(--accent-glow);
+    --dust:      var(--text);
+    --dust-dim:  var(--text-dim);
+    --telvanni:  #4a3a80;
   }
+
+  /* ══ ТЕМЫ МИРОВ ══ */
+  body.theme-morrowind {
+    --bg: #1a1410; --bg-mid: #221c15;
+    --accent: #c4622a; --accent2: #d4923a; --accent-glow: #f0b84a;
+    --text: #e8d5b0; --text-dim: #c4a97a;
+    --card-bg: rgba(46,36,25,0.9); --border: rgba(196,98,42,0.28);
+    --glow1: rgba(196,98,42,0.20); --glow2: rgba(74,48,96,0.16); --glow3: rgba(122,32,32,0.12);
+    --font-title: 'Uncial Antiqua', serif; --font-body: 'Crimson Pro', serif;
+  }
+  body.theme-lotr {
+    --bg: #0d1208; --bg-mid: #131a0d;
+    --accent: #6a9a3a; --accent2: #8abf52; --accent-glow: #aada70;
+    --text: #e8f0d8; --text-dim: #a8c080;
+    --card-bg: rgba(20,28,12,0.92); --border: rgba(100,160,50,0.28);
+    --glow1: rgba(80,140,40,0.18); --glow2: rgba(40,80,20,0.14); --glow3: rgba(60,100,30,0.10);
+    --font-title: 'IM Fell English', serif; --font-body: 'Crimson Pro', serif;
+  }
+  body.theme-hp {
+    --bg: #0a0818; --bg-mid: #100f20;
+    --accent: #8b5cf6; --accent2: #a78bfa; --accent-glow: #c4b5fd;
+    --text: #ede9fe; --text-dim: #a78bfa;
+    --card-bg: rgba(20,15,40,0.92); --border: rgba(139,92,246,0.3);
+    --glow1: rgba(139,92,246,0.2); --glow2: rgba(88,28,220,0.15); --glow3: rgba(60,20,160,0.12);
+    --font-title: 'Cinzel', serif; --font-body: 'Raleway', sans-serif;
+  }
+  body.theme-witcher {
+    --bg: #0f0c08; --bg-mid: #181410;
+    --accent: #c8a94a; --accent2: #e0c870; --accent-glow: #f0d880;
+    --text: #e8e0c8; --text-dim: #b8a880;
+    --card-bg: rgba(28,22,12,0.92); --border: rgba(200,169,74,0.28);
+    --glow1: rgba(180,140,40,0.18); --glow2: rgba(100,80,20,0.14); --glow3: rgba(60,40,10,0.12);
+    --font-title: 'IM Fell English', serif; --font-body: 'Crimson Pro', serif;
+  }
+  body.theme-starwars {
+    --bg: #020408; --bg-mid: #050810;
+    --accent: #00aaff; --accent2: #40c8ff; --accent-glow: #80e0ff;
+    --text: #d0eeff; --text-dim: #6090b0;
+    --card-bg: rgba(5,10,20,0.94); --border: rgba(0,150,255,0.25);
+    --glow1: rgba(0,120,255,0.15); --glow2: rgba(0,60,160,0.12); --glow3: rgba(0,30,100,0.10);
+    --font-title: 'Orbitron', sans-serif; --font-body: 'Raleway', sans-serif;
+  }
+  body.theme-lego {
+    --bg: #1a0a00; --bg-mid: #221000;
+    --accent: #f7c200; --accent2: #ff6600; --accent-glow: #ffdd44;
+    --text: #fff8e0; --text-dim: #d4a840;
+    --card-bg: rgba(40,20,0,0.92); --border: rgba(247,194,0,0.35);
+    --glow1: rgba(255,180,0,0.20); --glow2: rgba(255,100,0,0.15); --glow3: rgba(200,80,0,0.12);
+    --font-title: 'Special Elite', cursive; --font-body: 'Raleway', sans-serif;
+  }
+  body.theme-alice {
+    --bg: #080414; --bg-mid: #0e0820;
+    --accent: #e040fb; --accent2: #ea80fc; --accent-glow: #f3b8ff;
+    --text: #fce4ff; --text-dim: #c880e0;
+    --card-bg: rgba(20,8,35,0.94); --border: rgba(220,60,250,0.28);
+    --glow1: rgba(200,40,240,0.18); --glow2: rgba(100,0,160,0.15); --glow3: rgba(60,0,120,0.12);
+    --font-title: 'Caveat', cursive; --font-body: 'Raleway', sans-serif;
+  }
+  body.theme-stardew {
+    --bg: #0d1a08; --bg-mid: #122010;
+    --accent: #7bc67e; --accent2: #a5d6a7; --accent-glow: #c8e6c9;
+    --text: #e8f5e9; --text-dim: #81c784;
+    --card-bg: rgba(15,30,12,0.94); --border: rgba(100,200,100,0.28);
+    --glow1: rgba(80,180,80,0.18); --glow2: rgba(40,120,40,0.14); --glow3: rgba(20,80,20,0.12);
+    --font-title: 'Caveat', cursive; --font-body: 'Raleway', sans-serif;
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: var(--ash);
+    background: var(--bg);
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-family: 'Crimson Pro', Georgia, serif;
+    display: flex; flex-direction: column; align-items: center;
+    font-family: var(--font-body), Georgia, serif;
     overflow-x: hidden;
+    transition: background 0.8s ease, color 0.8s ease;
   }
   body::before {
     content: '';
     position: fixed; inset: 0;
     background:
-      radial-gradient(ellipse 120% 55% at 50% 105%, rgba(196,98,42,0.20) 0%, transparent 65%),
-      radial-gradient(ellipse 70%  40% at 85%  5%,  rgba(74,48,96,0.16)  0%, transparent 60%),
-      radial-gradient(ellipse 55%  45% at 8%  35%,  rgba(122,32,32,0.12) 0%, transparent 55%);
+      radial-gradient(ellipse 120% 55% at 50% 105%, var(--glow1) 0%, transparent 65%),
+      radial-gradient(ellipse 70%  40% at 85%  5%,  var(--glow2) 0%, transparent 60%),
+      radial-gradient(ellipse 55%  45% at 8%  35%,  var(--glow3) 0%, transparent 55%);
     pointer-events: none; z-index: 0;
+    transition: background 0.8s ease;
   }
 
   /* ── Шапка ── */
@@ -69,8 +152,8 @@
     background: linear-gradient(90deg, transparent, var(--ember), var(--amber), var(--ember), transparent);
   }
   header h1 {
-    font-family: 'Uncial Antiqua', serif;
-    font-size: clamp(20px, 4.5vw, 32px); color: var(--amber-glow);
+    font-family: var(--font-title);
+    font-size: clamp(20px, 4.5vw, 32px); color: var(--accent-glow);
     text-shadow: 0 0 28px rgba(212,146,58,0.55), 0 2px 6px rgba(0,0,0,0.9); letter-spacing: 0.04em;
   }
   header p { font-size: 14px; color: var(--dust-dim); margin-top: 7px; font-style: italic; opacity: 0.75; }
@@ -188,7 +271,7 @@
 
   .modal-emblem { font-size: 64px; animation: breathe 3s ease-in-out infinite; line-height: 1; }
   .modal-title {
-    font-family: 'Uncial Antiqua', serif;
+    font-family: var(--font-title);
     font-size: clamp(22px, 5vw, 34px);
     color: var(--amber-glow);
     text-shadow: 0 0 30px rgba(212,146,58,0.5);
@@ -326,9 +409,9 @@
 <!-- ══ ЭКРАН ВЫБОРА (старт / продолжить) ══ -->
 <div class="modal-overlay" id="screen-start">
   <div class="modal-card">
-    <div class="modal-emblem">🌋</div>
-    <div class="modal-title">Хранитель Свитков</div>
-    <div class="modal-subtitle" id="start-greeting">Врата в миры приключений открыты...</div>
+    <div class="modal-emblem" id="start-emblem">🌐</div>
+    <div class="modal-title" id="start-title" style="font-size:28px;letter-spacing:0.08em;">Врата Миров</div>
+    <div class="modal-subtitle" id="start-greeting">Добро пожаловать, странник...</div>
     <div id="start-buttons" style="width:100%;display:flex;flex-direction:column;gap:12px;"></div>
   </div>
 </div>
@@ -454,8 +537,8 @@
 <!-- ══ ИГРОВОЙ ЭКРАН ══ -->
 <div class="container">
   <header>
-    <h1 id="game-title">⸸ Хранитель Свитков ⸸</h1>
-    <p id="game-subtitle">Морровинд · Пепельные земли</p>
+    <h1 id="game-title">⸸ Врата Миров ⸸</h1>
+    <p id="game-subtitle">Твоё приключение</p>
   </header>
   <div id="story-log"></div>
   <div class="typing-indicator" id="typing">
@@ -480,7 +563,8 @@ const db   = getFirestore(app);
 // ══ ДАННЫЕ МИРОВ ══════════════════════════════════════════
 const WORLDS = [
   {
-    id: 'morrowind', icon: '🌋', name: 'Морровинд',
+    id: 'morrowind',
+    theme: 'morrowind', icon: '🌋', name: 'Морровинд',
     desc: 'Пепельные земли тёмных эльфов',
     color: '#c4622a',
     chars: [
@@ -507,7 +591,8 @@ const WORLDS = [
     subtitleText: 'Морровинд · Пепельные земли',
   },
   {
-    id: 'lotr', icon: '💍', name: 'Средиземье',
+    id: 'lotr',
+    theme: 'lotr', icon: '💍', name: 'Средиземье',
     desc: 'Мир Властелина Колец',
     color: '#5a8a3a',
     chars: [
@@ -533,7 +618,8 @@ const WORLDS = [
     subtitleText: 'Эпоха Кольца · Властелин Колец',
   },
   {
-    id: 'hp', icon: '⚡', name: 'Хогвартс',
+    id: 'hp',
+    theme: 'hp', icon: '⚡', name: 'Хогвартс',
     desc: 'Мир Гарри Поттера',
     color: '#7b4faa',
     chars: [
@@ -559,7 +645,8 @@ const WORLDS = [
     subtitleText: 'Мир волшебства · Гарри Поттер',
   },
   {
-    id: 'witcher', icon: '🐺', name: 'Ведьмак',
+    id: 'witcher',
+    theme: 'witcher', icon: '🐺', name: 'Ведьмак',
     desc: 'Тёмное фэнтези Сапковского',
     color: '#8a7a3a',
     chars: [
@@ -585,7 +672,8 @@ const WORLDS = [
     subtitleText: 'Мир Ведьмака · Сапковский',
   },
   {
-    id: 'starwars', icon: '⭐', name: 'Звёздные Войны',
+    id: 'starwars',
+    theme: 'starwars', icon: '⭐', name: 'Звёздные Войны',
     desc: 'Далёкая-далёкая галактика',
     color: '#3a6a8a',
     chars: [
@@ -611,7 +699,8 @@ const WORLDS = [
     subtitleText: 'Звёздные Войны · Далёкая галактика',
   },
   {
-    id: 'lego', icon: '🧱', name: 'LEGO',
+    id: 'lego',
+    theme: 'lego', icon: '🧱', name: 'LEGO',
     desc: 'Всё — это игрушки. Всё — возможно!',
     color: '#e8a020',
     chars: [
@@ -637,7 +726,35 @@ const WORLDS = [
     subtitleText: 'Мир LEGO · Всё возможно!',
   },
   {
-    id: 'alice', icon: '🐇', name: 'Страна Чудес',
+    id: 'stardew', icon: '🌱', name: 'Stardew Valley',
+    desc: 'Уютная ферма, тайны и дружба',
+    color: '#7bc67e',
+    theme: 'stardew',
+    chars: [
+      { icon: '🌾', name: 'Фермер', desc: 'Унаследовал дедушкину ферму. Руки в земле, душа нараспашку' },
+      { icon: '⛏️', name: 'Шахтёр', desc: 'Глубины горы зовут. Там древние тайны и редкие руды' },
+      { icon: '🍳', name: 'Повар', desc: 'Еда объединяет людей. Твои блюда открывают любые двери' },
+      { icon: '🎣', name: 'Рыбак', desc: 'Терпение и наблюдательность — твои главные таланты' },
+    ],
+    backstories: [
+      { icon: '📜', title: 'Наследство', text: 'Дедушка оставил тебе ферму и письмо: "Когда устанешь от суеты — открой"' },
+      { icon: '💼', title: 'Выгорание', text: 'Ты бросил офис в городе. Теперь чистый воздух, земля и новая жизнь' },
+      { icon: '🔮', title: 'Тайна', text: 'В деревне происходит что-то странное. Жители молчат. Ты должен узнать' },
+      { icon: '💕', title: 'Свежий старт', text: 'Новое место — новые люди — новый ты. Может здесь найдёшь что искал' },
+    ],
+    kits: [
+      { icon: '🌱', title: 'Набор фермера', items: ['Лейка', '5 семян репы', 'Старый рюкзак'] },
+      { icon: '⛏️', title: 'Набор шахтёра', items: ['Кирка', 'Факел x5', 'Зелье энергии'] },
+      { icon: '🎁', title: 'Дедушкин сундук', items: ['Письмо с подсказкой', 'Загадочное семя', '500 монет'] },
+    ],
+    prompt: `Ты — рассказчик в мире Stardew Valley. Пиши тепло, уютно, с юмором и добротой. Это мир где важны отношения, природа и маленькие радости. Но под уютной поверхностью скрываются тайны.
+МИР: Деревня Пеликан Таун. Река, шахта, ферма. Жители со своими историями и секретами. Сезоны меняются. Мэр Льюис что-то скрывает. В шахте обитают монстры. Дух Джоджа Корпорации нависает над деревней.`,
+    titleText: '🌱 Врата Миров · Stardew Valley 🌱',
+    subtitleText: 'Долина Звёздной Росы · Уютное приключение',
+  },
+  {
+    id: 'alice',
+    theme: 'alice', icon: '🐇', name: 'Страна Чудес',
     desc: 'Алиса в Стране Чудес',
     color: '#9b4fbf',
     chars: [
@@ -684,7 +801,7 @@ onAuthStateChanged(auth, async user => {
 
   document.getElementById('player-name-label').innerHTML = `Сера <span>${state.playerName}</span>`;
   document.getElementById('player-bar').classList.add('visible');
-  document.getElementById('start-greeting').textContent = `Приветствуем тебя, ${state.playerName}`;
+  document.getElementById('start-greeting').textContent = `Добро пожаловать, ${state.playerName}`;
 
   const lastSave = await loadLastSave(user.uid);
   renderStartButtons(lastSave);
@@ -733,6 +850,12 @@ window._continueGame = function() {
   if (!save) return;
   state.gameId = save.gameId;
   state.history = save.history || [];
+  // Восстанавливаем тему из сохранения если есть
+  if (save.worldTheme) {
+    applyTheme(save.worldTheme);
+    document.getElementById('game-title').textContent    = save.worldTitle || '⸸ Врата Миров ⸸';
+    document.getElementById('game-subtitle').textContent = save.worldSubtitle || 'Твоё приключение';
+  }
   hideAll();
   restoreHistory(state.history);
 };
@@ -777,7 +900,35 @@ window._selectWorld = function(id) {
   state.selectedBackstory = null;
   renderWorldsGrid();
   document.getElementById('btn-world-next').disabled = false;
+  // Предпросмотр темы при наведении/выборе
+  applyTheme(state.selectedWorld.theme);
 };
+
+function applyTheme(themeId) {
+  const body = document.body;
+  // Убираем все темы
+  body.className = body.className.replace(/theme-\S+/g, '').trim();
+  if (themeId) body.classList.add('theme-' + themeId);
+  // Обновляем typing indicator текст под мир
+  const typingEl = document.getElementById('typing');
+  if (typingEl && state.selectedWorld) {
+    typingEl.innerHTML = `${state.selectedWorld.icon} ${getThinkingText(state.selectedWorld.id)}<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>`;
+  }
+}
+
+function getThinkingText(worldId) {
+  const texts = {
+    morrowind: 'Хранитель Свитков думает',
+    lotr:      'Гэндальф размышляет',
+    hp:        'Думбльдор думает',
+    witcher:   'Ведьмак размышляет',
+    starwars:  'Сила направляет',
+    lego:      'Мастер-строитель думает',
+    alice:     'Чеширский кот улыбается',
+    stardew:   'Гранпа советует',
+  };
+  return texts[worldId] || 'Рассказчик думает';
+}
 
 // ══ ШАГ 2: ПЕРСОНАЖИ ══════════════════════════════════════
 function renderCharsGrid() {
@@ -879,6 +1030,7 @@ window.beginAdventure = function() {
   state.gameId  = 'session_' + Date.now();
   state.history = [];
 
+  applyTheme(world.theme);
   document.getElementById('game-title').textContent    = world.titleText;
   document.getElementById('game-subtitle').textContent = world.subtitleText;
 
@@ -919,10 +1071,13 @@ async function saveProgress() {
   if (!state.uid || state.history.length === 0) return;
   try {
     await setDoc(doc(db, 'players', state.uid, 'games', state.gameId), {
-      gameId: state.gameId,
-      title: (state.selectedWorld?.name || 'Приключение') + ' · ' + new Date().toLocaleDateString('ru'),
-      history: state.history,
-      savedAt: serverTimestamp(),
+      gameId:        state.gameId,
+      title:         (state.selectedWorld?.name || 'Приключение') + ' · ' + new Date().toLocaleDateString('ru'),
+      history:       state.history,
+      worldTheme:    state.selectedWorld?.theme    || null,
+      worldTitle:    state.selectedWorld?.titleText    || null,
+      worldSubtitle: state.selectedWorld?.subtitleText || null,
+      savedAt:       serverTimestamp(),
     });
     showSaveIndicator();
   } catch(e) { console.warn('Autosave failed:', e); }
