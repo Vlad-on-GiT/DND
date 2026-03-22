@@ -398,6 +398,65 @@
     transform: scale(1.04);
   }
 
+  /* ── Кнопки выбора на старте ── */
+  .start-btn-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .start-btn-continue {
+    background: linear-gradient(135deg, rgba(196,98,42,0.35), rgba(139,61,24,0.22));
+    border: 1px solid var(--amber);
+    border-radius: 8px;
+    color: var(--amber-glow);
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 18px;
+    padding: 15px 42px;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 0.06em;
+    width: 100%;
+    text-align: center;
+  }
+  .start-btn-continue:hover {
+    background: linear-gradient(135deg, rgba(196,98,42,0.55), rgba(139,61,24,0.38));
+    box-shadow: 0 0 35px rgba(212,146,58,0.55);
+    transform: scale(1.04);
+  }
+
+  .start-btn-new {
+    background: transparent;
+    border: 1px solid rgba(196,98,42,0.4);
+    border-radius: 8px;
+    color: var(--dust-dim);
+    font-family: 'Uncial Antiqua', serif;
+    font-size: 15px;
+    padding: 11px 32px;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 0.04em;
+    width: 100%;
+    text-align: center;
+    opacity: 0.75;
+  }
+  .start-btn-new:hover {
+    border-color: var(--ember);
+    color: var(--dust);
+    opacity: 1;
+  }
+
+  .last-save-hint {
+    font-size: 13px;
+    color: var(--dust-dim);
+    font-style: italic;
+    opacity: 0.55;
+    text-align: center;
+  }
+
   /* ── Экран загрузки (пока Firebase проверяет сессию) ── */
   #auth-loading {
     position: fixed;
@@ -436,7 +495,9 @@
     Ты прибыл на имперском корабле в Сейда Нин — портовый город на краю пепельных земель Вварденфелла.
     Красные горы, грибные леса, руины древних Двемеров. Здесь всё чужое. Здесь всё опасно.
   </div>
-  <button class="start-btn" id="start-btn" onclick="startGame()">⚔ Ступить на берег ⚔</button>
+  <div class="start-btn-group" id="start-btn-group">
+    <!-- Заполняется через JS после проверки сохранений -->
+  </div>
 </div>
 
 <div class="container">
@@ -458,7 +519,9 @@
 <script type="module">
 import { initializeApp }                              from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut }       from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, getDocs,
+         collection, query, orderBy, limit,
+         serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 import firebaseConfig                                 from "./firebase-config.js";
 
 // ── Firebase init ────────────────────────────────────────
@@ -480,11 +543,10 @@ const state = {
 };
 
 // ── Auth guard: ждём Firebase, потом показываем игру ─────
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, async user => {
   const loading = document.getElementById('auth-loading');
 
   if (!user) {
-    // Не авторизован — на главную
     window.location.href = 'index.html';
     return;
   }
@@ -492,7 +554,6 @@ onAuthStateChanged(auth, user => {
   state.uid        = user.uid;
   state.playerName = user.displayName || (user.isAnonymous ? 'Безымянный странник' : user.email?.split('@')[0] || 'Странник');
 
-  // Показываем имя в шапке и на стартовом экране
   const label    = document.getElementById('player-name-label');
   const greeting = document.getElementById('start-player-greeting');
   if (label)    label.innerHTML    = `Сера <span>${state.playerName}</span>`;
@@ -500,10 +561,113 @@ onAuthStateChanged(auth, user => {
 
   document.getElementById('player-bar').classList.add('visible');
 
-  // Убираем экран загрузки
+  // Ищем последнее сохранение
+  const lastSave = await loadLastSave(user.uid);
+  renderStartButtons(lastSave);
+
   loading.classList.add('hidden');
   setTimeout(() => loading.remove(), 600);
 });
+
+// ── Загрузить последнее сохранение ───────────────────────
+async function loadLastSave(uid) {
+  try {
+    const q = query(
+      collection(db, 'players', uid, 'games'),
+      orderBy('savedAt', 'desc'),
+      limit(1)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) return snap.docs[0].data();
+  } catch (e) {
+    console.warn('Could not load save:', e);
+  }
+  return null;
+}
+
+// ── Нарисовать кнопки старта ─────────────────────────────
+function renderStartButtons(lastSave) {
+  const group = document.getElementById('start-btn-group');
+  if (!group) return;
+
+  if (lastSave && lastSave.history?.length > 0) {
+    // Считаем дату последнего сохранения
+    const savedAt = lastSave.savedAt?.toDate?.();
+    const dateStr = savedAt
+      ? savedAt.toLocaleDateString('ru', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    group.innerHTML = `
+      <button class="start-btn-continue" onclick="window._continueGame()">
+        📜 Продолжить странствие
+      </button>
+      <div class="last-save-hint">${dateStr ? `Последнее сохранение: ${dateStr}` : ''}</div>
+      <button class="start-btn-new" onclick="window._newGame()">
+        ⚔ Начать новое приключение
+      </button>
+    `;
+    // Сохраняем данные для продолжения
+    window._lastSaveData = lastSave;
+  } else {
+    group.innerHTML = `
+      <button class="start-btn-continue" onclick="window._newGame()">
+        ⚔ Ступить на берег ⚔
+      </button>
+    `;
+  }
+}
+
+// ── Продолжить прошлую игру ──────────────────────────────
+window._continueGame = function() {
+  const save = window._lastSaveData;
+  if (!save) return;
+
+  state.gameId  = save.gameId;
+  state.history = save.history || [];
+
+  const s = document.getElementById('start-screen');
+  s.classList.add('hiding');
+  setTimeout(() => s.remove(), 900);
+
+  // Восстанавливаем историю на экране
+  restoreHistory(state.history);
+};
+
+// ── Новая игра ────────────────────────────────────────────
+window._newGame = function() {
+  state.gameId  = 'session_' + Date.now();
+  state.history = [];
+
+  const s = document.getElementById('start-screen');
+  s.classList.add('hiding');
+  setTimeout(() => s.remove(), 900);
+
+  const greeting = state.playerName !== 'Странник'
+    ? `Начни приключение. Меня зовут ${state.playerName}. Я только что высадился с имперского корабля в порту Сейда Нин. Обратись ко мне по имени в начале. Опиши первые минуты на берегу и дай мне выбор первого действия.`
+    : `Начни приключение. Я только что высадился с имперского корабля в порту Сейда Нин. Опиши первые минуты на берегу и дай мне выбор первого действия.`;
+  askDM(greeting);
+};
+
+// ── Восстановить историю из сохранения ───────────────────
+function restoreHistory(history) {
+  for (const msg of history) {
+    if (msg.role === 'user' && !msg.content.startsWith('Начни приключение')) {
+      // Показываем только реальные действия игрока (не стартовый промпт)
+      const text = msg.content.replace('Я выбираю: ', '');
+      addPlayerMessage(text);
+    } else if (msg.role === 'assistant') {
+      try {
+        const clean = msg.content.replace(/```json?\s*/gi, '').replace(/```\s*/g, '').trim();
+        const parsed = JSON.parse(clean);
+        if (parsed.story) addDMMessage(parsed.story);
+      } catch {
+        if (msg.content && msg.content !== '{}') addDMMessage(msg.content);
+      }
+    }
+  }
+  // После восстановления просим ведущего продолжить
+  askDM('Продолжай приключение с того места где мы остановились. Напомни коротко где я нахожусь и что происходит, затем дай варианты действий.');
+}
 
 // ── Выход ────────────────────────────────────────────────
 document.getElementById('logout-btn').addEventListener('click', async () => {
@@ -537,34 +701,44 @@ function showSaveIndicator() {
 }
 
 // ── Игровая логика ───────────────────────────────────────
-const SYSTEM_PROMPT = `Ты — опытный Хранитель Свитков (аналог Dungeon Master), ведущий приключение в мире TES III: Morrowind. Ты ведёшь игру для абсолютного новичка, который ничего не знает ни о DnD, ни о Морровинде.
+const SYSTEM_PROMPT = `Ты — мастер художественного слова и опытный Хранитель Свитков (Dungeon Master), ведущий живое приключение в мире TES III: Morrowind. Пиши как талантливый писатель — образно, чувственно, с деталями которые создают картину перед глазами.
 
-МИР И АТМОСФЕРА:
-- Остров Вварденфелл: серые пепельные равнины, исполинские грибы-деревья, руины Двемеров (древнего исчезнувшего народа), башни Телванни из живого гриба, даэдрические святилища.
-- Народы: Данмеры (тёмные эльфы) — суровые хозяева острова; Имперцы — завоеватели с запада; Аргониане, Хаджиты и другие.
+МИР:
+- Вварденфелл: пепельные равнины, исполинские грибы-деревья, руины Двемеров, башни Телванни из живого гриба, даэдрические святилища.
+- Народы: Данмеры (тёмные эльфы) — хозяева острова; Имперцы — завоеватели; Аргониане, Хаджиты.
 - Великие Дома: Телванни (маги), Хлаалу (торговцы), Редоран (воины), Индорил (жрецы).
-- Боги острова: Трибунал — три живых бога Данмеров. Красная гора на севере источает ядовитый Пепельный шторм.
-- Атмосфера: загадочная, тревожная, прекрасная. Что-то древнее дышит под пеплом.
+- Трибунал — три живых бога Данмеров. Красная гора источает Пепельный шторм.
 
-ПРАВИЛА:
-1. ВСЕГДА заканчивай ответ блоком выбора или броском кубика — никогда не заканчивай на открытом вопросе.
-2. Давай 3 варианта действия (иногда 2 или 4).
-3. Язык — русский, атмосферный, с данмерскими словами: "н'вах" (чужак, презрительно), "сера" (уважительное обращение), "дунмер" (тёмный эльф), "трибунал славный". Объясняй новые слова в скобках при первом употреблении.
-4. Кратко объясняй механику броска кубика, когда он нужен.
-5. Данмеры недоверчивы к чужакам. Мир реагирует на выборы игрока.
-6. Персонаж — чужак, только что высадившийся в Сейда Нин.
+СТИЛЬ ПОВЕСТВОВАНИЯ — это самое важное:
+- Никогда не пересказывай выбор игрока словами "ты подошёл к X" или "ты выбрал Y". Начинай сразу с последствий и ощущений.
+- Пиши от второго лица ("ты видишь", "под ногами хрустит").
+- Используй конкретные детали: запахи, звуки, фактуру, свет. Не "страж смотрел подозрительно" а "его красные глаза скользнули по тебе как по куску мяса на рынке".
+- Диалоги — живые, с характером. Данмеры говорят высокомерно, с презрением, иногда с скрытой угрозой.
+- Каждая сцена должна содержать что-то неожиданное: деталь, намёк на тайну, момент напряжения.
+- Данмерские слова: "н'вах" (чужак, презрительно), "сера" (уважит. обращение), "дунмер" (тёмный эльф). Объясняй при первом употреблении.
 
-ФОРМАТ — строго валидный JSON без markdown:
+ПРАВИЛА ИГРЫ:
+1. ВСЕГДА заканчивай блоком выбора или броском кубика.
+2. Давай 2-4 варианта действия — коротко, от первого лица ("Спросить о работе", "Уйти не отвечая").
+3. Варианты должны быть разными по духу: осторожный / дерзкий / хитрый.
+4. Мир реагирует на выборы — последствия ощутимы.
+5. Кубик бросаем в напряжённые моменты, кратко объясняя зачем.
+
+ФОРМАТ — строго валидный JSON без markdown, без текста до и после:
 {
-  "story": "Текст повествования. 3-6 предложений, атмосферный.",
-  "type": "choice" | "dice",
-  "actions": ["Вариант 1", "Вариант 2", "Вариант 3"],
+  "story": "Художественный текст 3-5 предложений.",
+  "type": "choice",
+  "actions": ["Вариант 1", "Вариант 2", "Вариант 3"]
+}
+или:
+{
+  "story": "Художественный текст.",
+  "type": "dice",
   "dice": { "notation": "1d20", "reason": "Название проверки" }
 }
 
-Для type="dice" поле actions не нужно. Для type="choice" поле dice не нужно.
-Нотации: 1d20 (навыки, атака), 2d6 (урон), 1d8 (тяжёлое оружие), 1d4 (кинжал).
-ОТВЕЧАЙ ТОЛЬКО ВАЛИДНЫМ JSON.`;
+Нотации: 1d20 (навык/атака), 2d6 (урон мечом), 1d8 (тяжёлое оружие), 1d4 (кинжал).
+ТОЛЬКО JSON. Никакого текста снаружи JSON.`;
 
 const log        = document.getElementById('story-log');
 const actionZone = document.getElementById('action-zone');
@@ -706,15 +880,7 @@ window._retryLast = () => {
   askDM(null);
 };
 
-window.startGame = () => {
-  const s = document.getElementById('start-screen');
-  s.classList.add('hiding');
-  setTimeout(() => s.remove(), 900);
-  const greeting = state.playerName !== 'Странник'
-    ? `Начни приключение. Меня зовут ${state.playerName}. Я только что высадился с имперского корабля в порту Сейда Нин. Обратись ко мне по имени в начале. Опиши первые минуты на берегу и дай мне выбор первого действия.`
-    : `Начни приключение. Я только что высадился с имперского корабля в порту Сейда Нин. Опиши первые минуты на берегу и дай мне выбор первого действия.`;
-  askDM(greeting);
-};
+// startGame replaced by _newGame and _continueGame
 </script>
 </body>
 </html>
