@@ -141,7 +141,7 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
 @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .dm-block{background:linear-gradient(160deg,var(--bg-card) 0%,rgba(0,0,0,0.25) 100%);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:2px 10px 10px 2px;padding:16px 18px;position:relative;}
 .dm-block::before{content:'✦';position:absolute;top:-10px;left:12px;font-size:12px;background:var(--bg-mid);padding:0 6px;color:var(--accent);}
-.dm-text{color:var(--text);font-size:17px;line-height:1.8;white-space:pre-wrap;}
+.dm-text{color:var(--text);font-size:17px;line-height:1.7;}.dm-text p{margin:0 0 10px 0;}.dm-text p:last-child{margin-bottom:0;}
 .player-block{align-self:flex-end;max-width:80%;background:color-mix(in srgb,var(--accent) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-right:3px solid var(--accent2);border-radius:10px 2px 2px 10px;padding:11px 15px;}
 .player-text{color:color-mix(in srgb,var(--text) 80%,transparent);font-size:15px;line-height:1.6;font-style:italic;}
 .dice-result{background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);border-radius:10px;padding:14px 18px;text-align:center;color:var(--accent-glow);font-family:var(--font-title);font-size:15px;}
@@ -498,7 +498,8 @@ onAuthStateChanged(auth, user => {
     try {
       const d = JSON.parse(newGameData);
       setupWorld(d);
-      initCharForWorld(d);
+      // Пробуем загрузить сохранённый стейт (если уже играли эту сессию)
+      if (!loadCharState()) initCharForWorld(d);
       renderAllPanels();
       askDM(d.startMsg);
     } catch(e) {
@@ -512,7 +513,9 @@ onAuthStateChanged(auth, user => {
       setupWorld(d);
       state.history = d.history||[];
       state.gameId  = d.gameId||state.gameId;
+      // Сначала Firestore, потом localStorage как более свежий
       if (d.charState) Object.assign(charState, d.charState);
+      loadCharState(); // перезаписывает если есть более свежее в localStorage
       renderAllPanels();
       restoreHistory(state.history);
     } catch(e) {
@@ -576,6 +579,25 @@ function setupWorld(d){
 }
 
 // ══ РЕНДЕР ПАНЕЛЕЙ ══
+function saveCharState(){
+  try {
+    const key = 'dnd_char_' + (state.uid||'guest') + '_' + (state.gameId||'');
+    localStorage.setItem(key, JSON.stringify({ charState, playerLevel }));
+  } catch(e){ console.warn('saveCharState:', e); }
+}
+
+function loadCharState(){
+  try {
+    const key = 'dnd_char_' + (state.uid||'guest') + '_' + (state.gameId||'');
+    const saved = localStorage.getItem(key);
+    if (!saved) return false;
+    const d = JSON.parse(saved);
+    if (d.charState)    Object.assign(charState, d.charState);
+    if (d.playerLevel)  playerLevel = d.playerLevel;
+    return true;
+  } catch(e){ return false; }
+}
+
 function renderAllPanels(){
   renderBars(); renderStats(); renderSkills(); renderEquipment(); renderInventory();
 }
@@ -679,7 +701,7 @@ function applyCharUpdate(update){
 
   if(update.inventory_remove){ update.inventory_remove.forEach(name=>{ const idx=charState.inventory.findIndex(i=>i.name===name); if(idx>=0) charState.inventory.splice(idx,1); }); changed=true; }
 
-  if(changed){ renderAllPanels(); updatePixelArt(); }
+  if(changed){ renderAllPanels(); updatePixelArt(); saveCharState(); }
 }
 
 let playerLevel = 1;
@@ -691,6 +713,7 @@ function levelUp(){
   document.getElementById('portrait-level').textContent=`Ур. ${playerLevel}`;
   addDMMessage(`✨ Уровень ${playerLevel}! Характеристики улучшены.`);
   updatePixelArt();
+  saveCharState();
 }
 
 // ══ СОХРАНЕНИЕ ══
@@ -793,10 +816,14 @@ function scrollToActions(){
 }
 function showTyping(v){ typing.classList.toggle('visible',v); }
 
-function addDMMessage(text){
+function addDMMessage(rawText){
+  const html = rawText
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\n\n+/g,'</p><p>')
+    .replace(/\n/g,'<br>');
   const d=document.createElement('div');
   d.className='message dm-block';
-  d.innerHTML=`<div class="dm-text">${text}</div>`;
+  d.innerHTML='<div class="dm-text"><p>'+html+'</p></div>';
   log.appendChild(d); scrollBottom();
 }
 function addPlayerMessage(text){
