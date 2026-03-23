@@ -24,12 +24,13 @@ body.theme-alice{--bg:#07041a;--bg-mid:#0c0820;--bg-card:rgba(16,8,32,0.94);--ac
 body.theme-stardew{--bg:#0a1608;--bg-mid:#101e0e;--bg-card:rgba(12,22,10,0.94);--accent:#7bc67e;--accent2:#a5d6a7;--accent-glow:#c8e6c9;--text:#e8f5e9;--text-dim:#81c784;--border:rgba(100,200,100,0.28);--glow1:rgba(80,180,80,0.18);--glow2:rgba(40,120,40,0.12);--glow3:rgba(20,80,20,0.10);--font-title:'Caveat',cursive;--font-body:'Raleway',sans-serif;}
 
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;font-family:var(--font-body),Georgia,serif;color:var(--text);overflow-x:hidden;}
+body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;font-family:var(--font-body),Georgia,serif;color:var(--text);overflow-x:hidden;padding-top:0;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 120% 55% at 50% 105%,var(--glow1) 0%,transparent 65%),radial-gradient(ellipse 70% 40% at 85% 5%,var(--glow2) 0%,transparent 60%),radial-gradient(ellipse 55% 45% at 8% 35%,var(--glow3) 0%,transparent 55%);pointer-events:none;z-index:0;}
 
 /* ── ШАПКА ── */
-#player-bar{position:sticky;top:0;z-index:100;width:100%;max-width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;gap:12px;opacity:0;transition:opacity 0.5s;background:var(--bg-mid);border-bottom:1px solid var(--border);backdrop-filter:blur(8px);}
+#player-bar{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:9px 20px;gap:12px;opacity:0;transition:opacity 0.5s;background:color-mix(in srgb,var(--bg-mid) 95%,transparent);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);}
 #player-bar.visible{opacity:1;}
+#player-bar~*{margin-top:48px;}
 .player-name{color:var(--text-dim);font-size:14px;font-style:italic;opacity:0.75;}
 .player-name span{color:var(--accent2);font-style:normal;}
 .bar-btns{display:flex;gap:8px;flex-shrink:0;}
@@ -37,7 +38,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .bar-btn:hover{border-color:var(--accent);color:var(--text);opacity:1;}
 
 /* ── ТРЁХКОЛОНОЧНЫЙ LAYOUT ── */
-.game-layout{position:relative;z-index:1;width:100%;max-width:1400px;display:grid;grid-template-columns:260px 1fr 260px;gap:16px;padding:12px 16px 28px;}
+.game-layout{position:relative;z-index:1;width:100%;max-width:1400px;display:grid;grid-template-columns:260px 1fr 260px;gap:16px;padding:12px 16px 28px;}.game-layout-wrap{width:100%;display:flex;justify-content:center;}
 
 /* ── БОКОВЫЕ ПАНЕЛИ ── */
 .side-panel{display:flex;flex-direction:column;gap:10px;align-self:start;position:sticky;top:16px;}
@@ -165,14 +166,17 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
 
 <div id="player-bar">
   <div class="player-name" id="player-name-label">Странник</div>
-  <div id="bar-title" style="font-family:var(--font-title);font-size:14px;color:var(--accent-glow);letter-spacing:0.05em;text-shadow:0 0 12px var(--glow1);display:none;flex:1;text-align:center;"></div>
+  <div style="flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;">
+    <div id="bar-title" style="font-family:var(--font-title);font-size:13px;color:var(--accent-glow);letter-spacing:0.05em;text-shadow:0 0 10px var(--glow1);display:none;"></div>
+    <div id="bar-subtitle" style="font-size:10px;color:var(--text-dim);font-style:italic;opacity:0.6;display:none;"></div>
+  </div>
   <div class="bar-btns">
     <button class="bar-btn" onclick="goToMenu()">← Меню</button>
     <button class="bar-btn" id="btn-logout">Выйти</button>
   </div>
 </div>
 
-<div class="game-layout">
+<div class="game-layout" style="margin-top:48px;">
 
   <!-- ══ ЛЕВАЯ ПАНЕЛЬ: ПЕРСОНАЖ ══ -->
   <div class="side-panel" id="left-panel">
@@ -254,10 +258,7 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
 
   <!-- ══ ЦЕНТР: ЛОГ ИГРЫ ══ -->
   <div class="container">
-    <header>
-      <h1 id="game-title">Врата Миров</h1>
-      <p id="game-subtitle">Твоё приключение</p>
-    </header>
+    <div style="display:none"><span id="game-title">Врата Миров</span><span id="game-subtitle">Твоё приключение</span></div>
     <div id="story-log"></div>
     <div class="typing-indicator" id="typing">
       Рассказчик думает<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
@@ -283,37 +284,37 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
 
           <!-- Слоты вокруг человечка -->
           <!-- Шлем — верх по центру -->
-          <div class="doll-slot" style="top:0;left:50%;transform:translateX(-50%)" id="slot-helmet" data-slot="helmet" onmouseenter="showGlobalTooltip(this, this.dataset.tipName||\'Пусто\', this.dataset.tipStat||\'\')" onmouseleave="hideGlobalTooltip()">
+          <div class="doll-slot" style="top:0;left:50%;transform:translateX(-50%)" id="slot-helmet" data-slot="helmet" data-has-tip="1">
             <div class="slot-box"><span id="slot-helmet-icon">⛑️</span></div>
             <div class="slot-label">Шлем</div>
             <div class="slot-tooltip" id="slot-helmet-tooltip" style="display:none"></div>
           </div>
           <!-- Броня — середина слева -->
-          <div class="doll-slot" style="top:70px;left:0" id="slot-armor" data-slot="armor" onmouseenter="showGlobalTooltip(this, this.dataset.tipName||\'Пусто\', this.dataset.tipStat||\'\')" onmouseleave="hideGlobalTooltip()">
+          <div class="doll-slot" style="top:70px;left:0" id="slot-armor" data-slot="armor" data-has-tip="1">
             <div class="slot-box"><span id="slot-armor-icon">🛡️</span></div>
             <div class="slot-label">Броня</div>
             <div class="slot-tooltip" id="slot-armor-tooltip" style="display:none"></div>
           </div>
           <!-- Оружие — середина справа -->
-          <div class="doll-slot" style="top:70px;right:0" id="slot-weapon" data-slot="weapon" onmouseenter="showGlobalTooltip(this, this.dataset.tipName||\'Пусто\', this.dataset.tipStat||\'\')" onmouseleave="hideGlobalTooltip()">
+          <div class="doll-slot" style="top:70px;right:0" id="slot-weapon" data-slot="weapon" data-has-tip="1">
             <div class="slot-box"><span id="slot-weapon-icon">⚔️</span></div>
             <div class="slot-label">Оружие</div>
             <div class="slot-tooltip" id="slot-weapon-tooltip" style="display:none"></div>
           </div>
           <!-- Перчатки — низ слева -->
-          <div class="doll-slot" style="top:140px;left:0" id="slot-gloves" data-slot="gloves" onmouseenter="showGlobalTooltip(this, this.dataset.tipName||\'Пусто\', this.dataset.tipStat||\'\')" onmouseleave="hideGlobalTooltip()">
+          <div class="doll-slot" style="top:140px;left:0" id="slot-gloves" data-slot="gloves" data-has-tip="1">
             <div class="slot-box"><span id="slot-gloves-icon">🧤</span></div>
             <div class="slot-label">Перчатки</div>
             <div class="slot-tooltip" id="slot-gloves-tooltip" style="display:none"></div>
           </div>
           <!-- Кольцо — низ справа -->
-          <div class="doll-slot" style="top:140px;right:0" id="slot-ring" data-slot="ring" onmouseenter="showGlobalTooltip(this, this.dataset.tipName||\'Пусто\', this.dataset.tipStat||\'\')" onmouseleave="hideGlobalTooltip()">
+          <div class="doll-slot" style="top:140px;right:0" id="slot-ring" data-slot="ring" data-has-tip="1">
             <div class="slot-box"><span id="slot-ring-icon">💍</span></div>
             <div class="slot-label">Кольцо</div>
             <div class="slot-tooltip" id="slot-ring-tooltip" style="display:none"></div>
           </div>
           <!-- Обувь — самый низ по центру -->
-          <div class="doll-slot" style="top:215px;left:50%;transform:translateX(-50%)" id="slot-boots" data-slot="boots" onmouseenter="showGlobalTooltip(this, this.dataset.tipName||\'Пусто\', this.dataset.tipStat||\'\')" onmouseleave="hideGlobalTooltip()">
+          <div class="doll-slot" style="top:215px;left:50%;transform:translateX(-50%)" id="slot-boots" data-slot="boots" data-has-tip="1">
             <div class="slot-box"><span id="slot-boots-icon">👢</span></div>
             <div class="slot-label">Обувь</div>
             <div class="slot-tooltip" id="slot-boots-tooltip" style="display:none"></div>
@@ -469,6 +470,8 @@ function setupWorld(d){
   document.getElementById('game-subtitle').textContent = d.worldSubtitle ||'Твоё приключение';
   const barTitle = document.getElementById('bar-title');
   if (barTitle) { barTitle.textContent = d.worldTitle||'Врата Миров'; barTitle.style.display='block'; }
+  const barSub = document.getElementById('bar-subtitle');
+  if (barSub) { barSub.textContent = d.worldSubtitle||''; barSub.style.display='block'; }
   document.getElementById('char-panel-title').textContent = d.playerName||'Персонаж';
   if (d.playerName) document.getElementById('portrait-name').textContent = d.playerName;
   if (d.charClass)  document.getElementById('portrait-class').textContent = d.charClass;
@@ -784,6 +787,20 @@ function restoreHistory(history){
 document.getElementById('btn-logout').addEventListener('click',async()=>{ await signOut(auth); window.location.href='index.html'; });
 
 // Тултипы объявлены в HTML напрямую
+
+// Делегированные события для тултипов слотов
+document.addEventListener('mouseover', function(e) {
+  const slot = e.target.closest('[data-has-tip]');
+  if (slot) {
+    const name = slot.dataset.tipName || '';
+    const stat = slot.dataset.tipStat || '';
+    if (name && name !== 'Пусто') showGlobalTooltip(slot, name, stat);
+  }
+});
+document.addEventListener('mouseout', function(e) {
+  const slot = e.target.closest('[data-has-tip]');
+  if (slot) hideGlobalTooltip();
+});
 
 function positionTooltip(tt, el) {
   // Показываем скрыто чтобы измерить размер
