@@ -160,6 +160,51 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
 #save-indicator{font-size:11px;color:var(--text-dim);opacity:0;transition:opacity 0.4s;font-style:italic;text-align:right;padding:4px 0 0;}
 #save-indicator.visible{opacity:0.5;}
 
+/* ── МОДАЛЬНОЕ ОКНО НАКАЗОВ ── */
+#nakazы-modal{
+  position:fixed;inset:0;z-index:500;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);
+  padding:20px;
+}
+#nakazы-modal.open{display:flex;}
+.nakaz-card{
+  background:var(--bg-mid);border:1px solid var(--accent);
+  border-radius:14px;padding:24px 24px 20px;
+  width:100%;max-width:480px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.6);
+  display:flex;flex-direction:column;gap:14px;
+}
+.nakaz-title{
+  font-family:var(--font-title);font-size:16px;
+  color:var(--accent-glow);letter-spacing:0.04em;
+}
+.nakaz-hint{font-size:12px;color:var(--text-dim);opacity:0.7;line-height:1.5;}
+.nakaz-textarea{
+  background:rgba(0,0,0,0.3);border:1px solid var(--border);
+  border-radius:8px;padding:12px 14px;
+  color:var(--text);font-family:var(--font-body);font-size:14px;
+  line-height:1.6;resize:vertical;min-height:130px;
+  outline:none;transition:border-color 0.2s;width:100%;
+}
+.nakaz-textarea:focus{border-color:var(--accent2);}
+.nakaz-btns{display:flex;gap:10px;justify-content:flex-end;}
+.nakaz-save{
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 30%,transparent),color-mix(in srgb,var(--accent) 15%,transparent));
+  border:1px solid var(--accent);border-radius:7px;
+  color:var(--accent-glow);font-family:var(--font-title);
+  font-size:13px;padding:8px 20px;cursor:pointer;transition:all 0.2s;
+}
+.nakaz-save:hover{box-shadow:0 0 16px color-mix(in srgb,var(--accent) 40%,transparent);}
+.nakaz-cancel{
+  background:transparent;border:1px solid var(--border);
+  border-radius:7px;color:var(--text-dim);font-size:13px;
+  padding:8px 16px;cursor:pointer;transition:all 0.2s;
+}
+.nakaz-cancel:hover{border-color:var(--accent);color:var(--text);}
+.nakaz-saved-hint{font-size:11px;color:var(--xp-color);opacity:0;transition:opacity 0.4s;text-align:center;}
+.nakaz-saved-hint.show{opacity:1;}
+
 /* ── ЗАГРУЗКА ── */
 #auth-loading{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:var(--bg);transition:opacity 0.5s;}
 #auth-loading.hidden{opacity:0;pointer-events:none;}
@@ -187,6 +232,7 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
     <div id="bar-subtitle" style="font-size:10px;color:var(--text-dim);font-style:italic;opacity:0.6;display:none;"></div>
   </div>
   <div class="bar-btns">
+    <button class="bar-btn" onclick="openNakazy()">📜 Наказы</button>
     <button class="bar-btn" onclick="goToMenu()">← Меню</button>
     <button class="bar-btn" id="btn-logout">Выйти</button>
   </div>
@@ -383,6 +429,21 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
   </div>
 </div>
 
+<!-- Модальное окно Наказы мастеру -->
+<div id="nakazы-modal">
+  <div class="nakaz-card">
+    <div class="nakaz-title">📜 Наказы мастеру</div>
+    <div class="nakaz-hint">Напиши пожелания к стилю игры. Мастер будет учитывать их в каждом ответе.<br>
+    Например: <em>«Больше юмора», «Хочу больше загадок», «Не убивай моего персонажа», «Пиши короче»</em></div>
+    <textarea class="nakaz-textarea" id="nakaz-text" placeholder="Твои пожелания мастеру..."></textarea>
+    <div class="nakaz-saved-hint" id="nakaz-saved">✓ Сохранено и передано мастеру</div>
+    <div class="nakaz-btns">
+      <button class="nakaz-cancel" onclick="closeNakazy()">Закрыть</button>
+      <button class="nakaz-save" onclick="saveNakazy()">Сохранить 📜</button>
+    </div>
+  </div>
+</div>
+
 <!-- Глобальные тултипы — поверх всего -->
 <div id="global-tooltip" style="position:fixed;z-index:9999;display:none;background:var(--bg-mid);border:1px solid var(--accent);border-radius:8px;padding:8px 12px;min-width:140px;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.7);">
   <div id="gt-name" style="font-family:var(--font-title);font-size:12px;color:var(--accent-glow);margin-bottom:3px;"></div>
@@ -475,6 +536,7 @@ const state = {
   waitingForDice:false, currentActions:[], locked:false,
   uid:null, gameId:'session_'+Date.now(),
   worldPrompt:null, thinkingText:'Рассказчик думает',
+  nakazText:'',
 };
 
 // ══ AUTH ══
@@ -485,6 +547,7 @@ onAuthStateChanged(auth, user => {
   const name = user.displayName||(user.isAnonymous?'Гость':user.email?.split('@')[0]||'Странник');
   document.getElementById('player-name-label').innerHTML = `<span>${name}</span>`;
   document.getElementById('player-bar').classList.add('visible');
+  loadNakazy();
 
   const newGameData  = sessionStorage.getItem('dnd_newgame');
   const continueData = sessionStorage.getItem('dnd_continue');
@@ -579,6 +642,39 @@ function setupWorld(d){
 }
 
 // ══ РЕНДЕР ПАНЕЛЕЙ ══
+// ── НАКАЗЫ — отдельное хранилище per user ──
+function saveNakazy(){
+  const text = document.getElementById('nakaz-text').value.trim();
+  state.nakazText = text;
+  try {
+    localStorage.setItem('dnd_nakazy_'+(state.uid||'guest'), text);
+  } catch(e){}
+  const hint = document.getElementById('nakaz-saved');
+  hint.classList.add('show');
+  setTimeout(()=>hint.classList.remove('show'), 2500);
+}
+function loadNakazy(){
+  try {
+    const saved = localStorage.getItem('dnd_nakazy_'+(state.uid||'guest'));
+    if (saved !== null) {
+      state.nakazText = saved;
+      const ta = document.getElementById('nakaz-text');
+      if (ta) ta.value = saved;
+    }
+  } catch(e){}
+}
+function openNakazy(){
+  loadNakazy();
+  document.getElementById('nakazы-modal').classList.add('open');
+}
+function closeNakazy(){
+  document.getElementById('nakazы-modal').classList.remove('open');
+}
+// Закрыть по клику на фон
+document.getElementById('nakazы-modal').addEventListener('click', function(e){
+  if (e.target === this) closeNakazy();
+});
+
 function saveCharState(){
   try {
     const key = 'dnd_char_' + (state.uid||'guest') + '_' + (state.gameId||'');
@@ -748,7 +844,10 @@ function buildSystemPrompt(){
   const equipStr  = Object.entries(charState.equipment).filter(([,v])=>v).map(([k,v])=>k+':'+v.name).join(', ')||'пусто';
   const curXP = xp.cur, maxXP = xp.max;
 
-  return base + `
+  const nakazBlock = state.nakazText
+    ? `\n\nПОЖЕЛАНИЯ ИГРОКА (учитывай в каждом ответе):\n${state.nakazText}`
+    : '';
+  return base + nakazBlock + `
 
 СОСТОЯНИЕ ПЕРСОНАЖА:
 HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${maxXP} | Золото: ${charState.gold}
@@ -781,6 +880,9 @@ HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${m
 УРОН: удар врага hp -5 до -20. Лечение: hp восстанавливается. HP не ниже 1.
 ЗОЛОТО: зарабатывай и трать реалистично.
 ПРЕДМЕТЫ: добавляй в инвентарь когда игрок подбирает или покупает.
+
+ВАЖНО: НИКОГДА не пиши варианты действий внутри поля "story". "story" — только повествование. Варианты ТОЛЬКО в поле "actions".
+НИКОГДА не добавляй "У тебя есть выбор:" или список действий в текст story.
 
 ФОРМАТ — строго валидный JSON, ТОЛЬКО JSON без слов снаружи:
 
@@ -819,13 +921,16 @@ function showTyping(v){ typing.classList.toggle('visible',v); }
 function addDMMessage(rawText){
   const html = rawText
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\n\n+/g,'</p><p>')
-    .replace(/\n/g,'<br>');
+    .replace(/\r\n/g,'\n')
+    .replace(/\n{3,}/g,'\n\n')   // схлопываем 3+ переносов в 2
+    .replace(/\n\n/g,'</p><p>')  // двойной => новый абзац
+    .replace(/\n/g,'<br>');       // одинарный => br
   const d=document.createElement('div');
   d.className='message dm-block';
   d.innerHTML='<div class="dm-text"><p>'+html+'</p></div>';
   log.appendChild(d); scrollBottom();
 }
+
 function addPlayerMessage(text){
   const d=document.createElement('div');
   d.className='message player-block';
@@ -879,26 +984,38 @@ async function askDM(userMessage){
       showTyping(false); state.locked=false;
       setTimeout(()=>askDM(null),1500); return;
     }
+    // Если модель не дала actions — принудительно просим продолжить с кубиком или выбором
+    if (parsed.type==='choice' && (!parsed.actions || parsed.actions.length===0)) {
+      parsed.actions = ['▶️ Продолжить...'];
+    }
 
     // ── ЗАПРОС 2: переписываем story в живой формат ──
-    const rewritePrompt = `Ты — литературный редактор текстовой RPG. Перепиши текст сцены в живой, атмосферный формат.
+    // Формируем контекст для редактора
+    const invAdded  = parsed.char_update?.inventory_add  || [];
+    const goldDelta = (parsed.char_update?.gold ?? charState.gold) - charState.gold;
+    const invBlock  = invAdded.length
+      ? '\\n\\nНайдено в сцене:\\n' + invAdded.map(i=>`${i.icon||'📦'} ${i.name} — ${i.desc||''}`).join('\\n')
+      : '';
+    const goldBlock = goldDelta > 0
+      ? `\\n\\n💰 Золото +${goldDelta} (итого ${(parsed.char_update?.gold||charState.gold)})`
+      : '';
+
+    const rewritePrompt = `Ты — литературный редактор текстовой RPG. Перепиши текст сцены.
 
 ПРАВИЛА:
-1. НЕ начинай с имени персонажа и не пересказывай его действие. Сразу — последствия, ощущения, мир вокруг.
-2. Разбей на абзацы через пустую строку. Каждый абзац — 1-2 предложения.
-3. Диалоги — отдельной строкой с тире: — Слова персонажа, — говорит он/она.
-4. Если найдены предметы — оформи списком:
-   📦 Найдено:
-   • 🗡️ Название — краткое описание
-5. Используй 2-4 эмодзи по смыслу в тексте.
-6. Если изменилось золото — покажи: 💰 Золото: было + добавлено = итого
-7. Пиши от второго лица ("ты видишь", "в руках ощущается").
-8. Текст живой и кинематографичный — не книжный, не отчётный.
+1. НЕ начинай с имени персонажа. Сразу — действие, ощущения, мир вокруг.
+2. Абзацы по 1-2 предложения, разделены одной пустой строкой.
+3. Диалоги отдельной строкой: — Реплика, — говорит персонаж.
+4. 2-3 эмодзи по смыслу в тексте.
+5. От второго лица ("ты видишь", "в руках").
+6. Живой и кинематографичный стиль.
+7. НЕ добавляй блоки "Найдено:", "Золото:", "У тебя есть выбор:" — это делается отдельно.
+8. НЕ перечисляй варианты действий в тексте — только повествование.
 
 ИСХОДНЫЙ ТЕКСТ:
-${parsed.story}
+${parsed.story}${invBlock}${goldBlock}
 
-Верни ТОЛЬКО переписанный текст, без кавычек, без JSON, без пояснений.`;
+Верни ТОЛЬКО переписанный текст без кавычек и пояснений.`;
 
     const resp2 = await fetch('https://dnd-proxy.vercel.app/api/proxy',{
       method:'POST',
@@ -1147,6 +1264,12 @@ function updatePixelArt() {
 
 // Начальный рендер пустых панелей
 renderAllPanels();
+
+// Экспорт в window для onclick
+window.openNakazy  = openNakazy;
+window.closeNakazy = closeNakazy;
+window.saveNakazy  = saveNakazy;
+window.goToMenu    = goToMenu;
 </script>
 </body>
 </html>
