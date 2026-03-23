@@ -766,8 +766,13 @@ const typing=document.getElementById('typing');
 function scrollBottom(){
   setTimeout(()=>{
     const last = log.lastElementChild;
-    if (last) last.scrollIntoView({ behavior:'smooth', block:'end' });
+    if (last) last.scrollIntoView({ behavior:'smooth', block:'nearest' });
   }, 100);
+}
+function scrollToActions(){
+  setTimeout(()=>{
+    actionZone.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }, 150);
 }
 function showTyping(v){ typing.classList.toggle('visible',v); }
 
@@ -789,7 +794,7 @@ function addDiceResult(notation,result,reason){
   d.innerHTML=`🎲 ${reason}<br><span class="roll-number">${result}</span><small style="opacity:0.6">${notation}</small>`;
   log.appendChild(d); scrollBottom();
 }
-function setActionZone(html){ actionZone.innerHTML=html; scrollBottom(); }
+function setActionZone(html){ actionZone.innerHTML=html; if(html.trim()) scrollToActions(); }
 
 function rollDice(notation){
   const m=notation.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
