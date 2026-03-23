@@ -544,10 +544,7 @@ function renderInventory(){
   for (let i=0;i<cells;i++){
     const item = charState.inventory[i];
     if (item){
-      const esc = s => s.replace(/'/g,"&#39;");
-      html+=`<div class="inv-cell has-item"
-        onmouseenter="showItemTooltip(this,'${esc(item.name)}','${esc(item.desc||'')}')"
-        onmouseleave="hideItemTooltip()">
+      html+=`<div class="inv-cell has-item" data-item-name="${(item.name||'').replace(/"/g,'&quot;')}" data-item-desc="${(item.desc||'').replace(/"/g,'&quot;')}">
         ${item.icon||'📦'}
         ${item.qty>1?`<span class="item-qty">${item.qty}</span>`:''}
       </div>`;
@@ -732,9 +729,20 @@ async function askDM(userMessage){
     saveProgress();
   } catch(err){
     showTyping(false);
+    // Автоповтор при серверной ошибке
+    state.locked = false;
+    if (!state._retryCount) state._retryCount = 0;
+    if (state._retryCount < 2) {
+      state._retryCount++;
+      setTimeout(() => askDM(null), 2000);
+      return;
+    }
+    state._retryCount = 0;
     addDMMessage('⚠ Связь прервана. Попробуй ещё раз.');
     setActionZone(`<button class="action-btn" onclick="window._retry()">🔄 Попробовать снова</button>`);
+    return;
   }
+  state._retryCount = 0;
   state.locked=false;
 }
 
@@ -796,10 +804,16 @@ document.addEventListener('mouseover', function(e) {
     const stat = slot.dataset.tipStat || '';
     if (name && name !== 'Пусто') showGlobalTooltip(slot, name, stat);
   }
+  const cell = e.target.closest('[data-item-name]');
+  if (cell) {
+    const name = cell.dataset.itemName || '';
+    const desc = cell.dataset.itemDesc || '';
+    if (name) showItemTooltip(cell, name, desc);
+  }
 });
 document.addEventListener('mouseout', function(e) {
-  const slot = e.target.closest('[data-has-tip]');
-  if (slot) hideGlobalTooltip();
+  if (e.target.closest('[data-has-tip]'))  hideGlobalTooltip();
+  if (e.target.closest('[data-item-name]')) hideItemTooltip();
 });
 
 function positionTooltip(tt, el) {
