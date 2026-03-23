@@ -385,28 +385,39 @@ onAuthStateChanged(auth, user => {
   const newGameData  = sessionStorage.getItem('dnd_newgame');
   const continueData = sessionStorage.getItem('dnd_continue');
 
+  // Скрываем загрузку сразу — не ждём askDM
+  loading.classList.add('hidden');
+  setTimeout(()=>loading.remove(), 500);
+
   if (newGameData){
     sessionStorage.removeItem('dnd_newgame');
-    const d = JSON.parse(newGameData);
-    setupWorld(d);
-    // Инициализируем статы под мир
-    initCharForWorld(d);
-    renderAllPanels();
-    askDM(d.startMsg);
+    try {
+      const d = JSON.parse(newGameData);
+      setupWorld(d);
+      initCharForWorld(d);
+      renderAllPanels();
+      askDM(d.startMsg);
+    } catch(e) {
+      console.error('newgame parse error:', e);
+      window.location.href='menu.html';
+    }
   } else if (continueData){
     sessionStorage.removeItem('dnd_continue');
-    const d = JSON.parse(continueData);
-    setupWorld(d);
-    state.history = d.history||[];
-    state.gameId  = d.gameId||state.gameId;
-    if (d.charState) Object.assign(charState, d.charState);
-    renderAllPanels();
-    restoreHistory(state.history);
+    try {
+      const d = JSON.parse(continueData);
+      setupWorld(d);
+      state.history = d.history||[];
+      state.gameId  = d.gameId||state.gameId;
+      if (d.charState) Object.assign(charState, d.charState);
+      renderAllPanels();
+      restoreHistory(state.history);
+    } catch(e) {
+      console.error('continue parse error:', e);
+      window.location.href='menu.html';
+    }
   } else {
     window.location.href='menu.html'; return;
   }
-  loading.classList.add('hidden');
-  setTimeout(()=>loading.remove(),500);
 });
 
 function initCharForWorld(d) {

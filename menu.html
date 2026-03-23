@@ -894,6 +894,17 @@ function updateTopTitle(world) {
   document.getElementById('home-title').textContent = world.titleText;
   document.getElementById('home-emblem').textContent = world.icon;
 }
+// ══ ЭКСПОРТ В WINDOW (нужно для onclick в HTML) ══
+window.showPage      = showPage;
+window.selectWorld   = selectWorld;
+window.previewTheme  = previewTheme;
+window.selectChar    = selectChar;
+window.selectBackstory = selectBackstory;
+window.checkBackstoryStep = checkBackstoryStep;
+window.selectDiff    = selectDiff;
+window.selectKit     = selectKit;
+window.launchGame    = launchGame;
+window.continueSave  = continueSave;
 </script>
 </body>
 </html>
