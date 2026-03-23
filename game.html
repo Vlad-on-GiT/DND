@@ -90,8 +90,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .doll-slot .slot-label{font-size:9px;color:var(--text-dim);text-align:center;margin-top:2px;line-height:1.2;opacity:0.7;}
 
 /* Tooltip при наведении */
-.slot-tooltip{position:fixed;z-index:1000;background:var(--bg-mid);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;min-width:130px;pointer-events:none;opacity:0;transition:opacity 0.15s;white-space:nowrap;display:none;}
-.slot-tooltip.visible{opacity:1;display:block;}
+.slot-tooltip{position:fixed;z-index:9999;background:var(--bg-mid);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;min-width:140px;pointer-events:none;opacity:0;transition:opacity 0.2s;white-space:nowrap;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.6);}
+.slot-tooltip.visible{opacity:1;}
 .slot-tooltip-name{font-size:12px;color:var(--accent-glow);font-weight:600;margin-bottom:4px;}
 .slot-tooltip-stat{font-size:11px;color:var(--text-dim);line-height:1.5;}
 
@@ -101,8 +101,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .inv-cell:hover{border-color:var(--accent2);background:rgba(255,255,255,0.07);}
 .inv-cell.has-item{border-color:color-mix(in srgb,var(--accent) 50%,transparent);}
 .inv-cell .item-qty{position:absolute;bottom:3px;right:4px;font-size:9px;color:var(--accent2);font-weight:700;line-height:1;}
-.item-tooltip{position:fixed;z-index:1000;background:var(--bg-mid);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;min-width:140px;pointer-events:none;opacity:0;transition:opacity 0.15s;white-space:nowrap;display:none;}
-.item-tooltip.visible{opacity:1;display:block;}
+.item-tooltip{position:fixed;z-index:9999;background:var(--bg-mid);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;min-width:140px;pointer-events:none;opacity:0;transition:opacity 0.2s;white-space:nowrap;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.6);}
+.item-tooltip.visible{opacity:1;}
 .item-tooltip-name{font-size:12px;color:var(--accent-glow);font-weight:600;margin-bottom:3px;}
 .item-tooltip-desc{font-size:11px;color:var(--text-dim);line-height:1.5;}
 
@@ -700,9 +700,17 @@ async function askDM(userMessage){
       parsed=JSON.parse(clean);
     } catch { parsed={story:raw,type:'choice',actions:['Продолжить...']}; }
 
+    // Если ИИ вернул пустой ответ — убираем из истории и пробуем снова
+    if (!parsed.story || parsed.story.trim() === '...' || parsed.story.trim() === '') {
+      showTyping(false);
+      state.locked = false;
+      // Короткая пауза и автоповтор
+      setTimeout(() => askDM(null), 1500);
+      return;
+    }
     state.history.push({role:'assistant',content:raw});
     showTyping(false);
-    addDMMessage(parsed.story||'...');
+    addDMMessage(parsed.story);
     if(parsed.char_update) applyCharUpdate(parsed.char_update);
     renderActions(parsed);
     saveProgress();
@@ -775,29 +783,48 @@ globalItemTooltip.className = 'item-tooltip';
 globalItemTooltip.innerHTML = '<div class="item-tooltip-name" id="git-name"></div><div class="item-tooltip-desc" id="git-desc"></div>';
 document.body.appendChild(globalItemTooltip);
 
+function positionTooltip(tt, el) {
+  // Показываем скрыто чтобы измерить размер
+  tt.style.visibility = 'hidden';
+  tt.style.display = 'block';
+  const r   = el.getBoundingClientRect();
+  const tw  = tt.offsetWidth  || 140;
+  const th  = tt.offsetHeight || 60;
+  let left  = r.left + r.width / 2 - tw / 2;
+  let top   = r.top - th - 10;
+  // Не выходим за края экрана
+  left = Math.max(8, Math.min(left, window.innerWidth  - tw - 8));
+  top  = top < 8 ? r.bottom + 6 : top; // если нет места сверху — снизу
+  tt.style.left = left + 'px';
+  tt.style.top  = top  + 'px';
+  tt.style.visibility = 'visible';
+}
+
 function showGlobalTooltip(el, name, stat) {
+  if (!name || name === 'Пусто') return; // не показывать пустые
   const tt = document.getElementById('global-tooltip');
-  document.getElementById('gt-name').textContent = name || 'Пусто';
+  document.getElementById('gt-name').textContent = name;
   document.getElementById('gt-stat').textContent = stat || '';
-  const r = el.getBoundingClientRect();
-  tt.style.left = Math.min(r.left + r.width/2 - 65, window.innerWidth - 150) + 'px';
-  tt.style.top  = Math.max(4, r.top - tt.offsetHeight - 8) + 'px';
+  positionTooltip(tt, el);
   tt.classList.add('visible');
 }
 function hideGlobalTooltip() {
-  document.getElementById('global-tooltip').classList.remove('visible');
+  const tt = document.getElementById('global-tooltip');
+  tt.classList.remove('visible');
+  tt.style.display = 'none';
 }
 function showItemTooltip(el, name, desc) {
+  if (!name) return;
   const tt = document.getElementById('global-item-tooltip');
-  document.getElementById('git-name').textContent = name || '';
+  document.getElementById('git-name').textContent = name;
   document.getElementById('git-desc').textContent = desc || '';
-  const r = el.getBoundingClientRect();
-  tt.style.left = Math.min(r.left + r.width/2 - 70, window.innerWidth - 160) + 'px';
-  tt.style.top  = Math.max(4, r.top - 80) + 'px';
+  positionTooltip(tt, el);
   tt.classList.add('visible');
 }
 function hideItemTooltip() {
-  document.getElementById('global-item-tooltip').classList.remove('visible');
+  const tt = document.getElementById('global-item-tooltip');
+  tt.classList.remove('visible');
+  tt.style.display = 'none';
 }
 window.goToMenu=()=>{ window.location.href='menu.html'; };
 
