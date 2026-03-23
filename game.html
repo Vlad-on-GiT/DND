@@ -41,7 +41,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 /* ── БОКОВЫЕ ПАНЕЛИ ── */
 .side-panel{display:flex;flex-direction:column;gap:10px;align-self:start;position:sticky;top:16px;}
-.panel-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.panel-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:visible;}
 .panel-header{padding:10px 14px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
 .panel-header-icon{font-size:14px;}
 .panel-header-title{font-family:var(--font-title);font-size:12px;color:var(--accent2);letter-spacing:0.05em;text-transform:uppercase;}
@@ -81,7 +81,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .portrait-level{display:inline-block;background:color-mix(in srgb,var(--accent) 20%,transparent);border:1px solid var(--accent);border-radius:4px;padding:2px 8px;font-size:11px;color:var(--accent2);font-family:var(--font-title);letter-spacing:0.04em;}
 
 /* ── ЧЕЛОВЕЧЕК СО СЛОТАМИ (ПИКСЕЛЬ-АРТ) ── */
-.doll-wrap{position:relative;margin:0 auto;width:160px;height:240px;}
+.doll-wrap{position:relative;margin:0 auto;width:160px;height:260px;}
 #pixel-doll{image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:0 auto;}
 .doll-slot{position:absolute;cursor:pointer;transition:all 0.2s;}
 .doll-slot .slot-box{width:36px;height:36px;border:1px solid var(--border);border-radius:6px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:18px;transition:all 0.2s;position:relative;}
@@ -90,8 +90,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .doll-slot .slot-label{font-size:9px;color:var(--text-dim);text-align:center;margin-top:2px;line-height:1.2;opacity:0.7;}
 
 /* Tooltip при наведении */
-.slot-tooltip{position:absolute;z-index:50;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg-mid);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;min-width:130px;pointer-events:none;opacity:0;transition:opacity 0.15s;white-space:nowrap;}
-.doll-slot:hover .slot-tooltip{opacity:1;}
+.slot-tooltip{position:fixed;z-index:1000;background:var(--bg-mid);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;min-width:130px;pointer-events:none;opacity:0;transition:opacity 0.15s;white-space:nowrap;display:none;}
+.slot-tooltip.visible{opacity:1;display:block;}
 .slot-tooltip-name{font-size:12px;color:var(--accent-glow);font-weight:600;margin-bottom:4px;}
 .slot-tooltip-stat{font-size:11px;color:var(--text-dim);line-height:1.5;}
 
@@ -101,8 +101,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .inv-cell:hover{border-color:var(--accent2);background:rgba(255,255,255,0.07);}
 .inv-cell.has-item{border-color:color-mix(in srgb,var(--accent) 50%,transparent);}
 .inv-cell .item-qty{position:absolute;bottom:3px;right:4px;font-size:9px;color:var(--accent2);font-weight:700;line-height:1;}
-.inv-cell .item-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg-mid);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;min-width:140px;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:50;white-space:nowrap;}
-.inv-cell:hover .item-tooltip{opacity:1;}
+.item-tooltip{position:fixed;z-index:1000;background:var(--bg-mid);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;min-width:140px;pointer-events:none;opacity:0;transition:opacity 0.15s;white-space:nowrap;display:none;}
+.item-tooltip.visible{opacity:1;display:block;}
 .item-tooltip-name{font-size:12px;color:var(--accent-glow);font-weight:600;margin-bottom:3px;}
 .item-tooltip-desc{font-size:11px;color:var(--text-dim);line-height:1.5;}
 
@@ -278,62 +278,44 @@ header p{font-size:12px;color:var(--text-dim);margin-top:5px;font-style:italic;o
         <div style="position:relative;width:100%;height:260px;">
 
           <!-- Пиксель-арт человечек -->
-          <canvas id="pixel-doll" width="48" height="72" style="position:absolute;left:50%;top:10px;transform:translateX(-50%);width:96px;height:144px;"></canvas>
+          <canvas id="pixel-doll" width="48" height="72" style="position:absolute;left:50%;top:16px;transform:translateX(-50%);width:80px;height:120px;"></canvas>
 
           <!-- Слоты вокруг человечка -->
           <!-- Шлем — верх по центру -->
-          <div class="doll-slot" style="top:0;left:50%;transform:translateX(-50%)" id="slot-helmet" data-slot="helmet">
+          <div class="doll-slot" style="top:0;left:50%;transform:translateX(-50%)" id="slot-helmet" data-slot="helmet" onmouseenter="showGlobalTooltip(this, document.getElementById('slot-helmet-name').textContent, document.getElementById('slot-helmet-stat').textContent)" onmouseleave="hideGlobalTooltip()">
             <div class="slot-box"><span id="slot-helmet-icon">⛑️</span></div>
             <div class="slot-label">Шлем</div>
-            <div class="slot-tooltip">
-              <div class="slot-tooltip-name" id="slot-helmet-name">Пусто</div>
-              <div class="slot-tooltip-stat" id="slot-helmet-stat"></div>
-            </div>
+            <div class="slot-tooltip" id="slot-helmet-tooltip" style="display:none"></div>
           </div>
           <!-- Броня — середина слева -->
-          <div class="doll-slot" style="top:70px;left:0" id="slot-armor" data-slot="armor">
+          <div class="doll-slot" style="top:70px;left:0" id="slot-armor" data-slot="armor" onmouseenter="showGlobalTooltip(this, document.getElementById('slot-armor-name').textContent, document.getElementById('slot-armor-stat').textContent)" onmouseleave="hideGlobalTooltip()">
             <div class="slot-box"><span id="slot-armor-icon">🛡️</span></div>
             <div class="slot-label">Броня</div>
-            <div class="slot-tooltip">
-              <div class="slot-tooltip-name" id="slot-armor-name">Пусто</div>
-              <div class="slot-tooltip-stat" id="slot-armor-stat"></div>
-            </div>
+            <div class="slot-tooltip" id="slot-armor-tooltip" style="display:none"></div>
           </div>
           <!-- Оружие — середина справа -->
-          <div class="doll-slot" style="top:70px;right:0" id="slot-weapon" data-slot="weapon">
+          <div class="doll-slot" style="top:70px;right:0" id="slot-weapon" data-slot="weapon" onmouseenter="showGlobalTooltip(this, document.getElementById('slot-weapon-name').textContent, document.getElementById('slot-weapon-stat').textContent)" onmouseleave="hideGlobalTooltip()">
             <div class="slot-box"><span id="slot-weapon-icon">⚔️</span></div>
             <div class="slot-label">Оружие</div>
-            <div class="slot-tooltip">
-              <div class="slot-tooltip-name" id="slot-weapon-name">Пусто</div>
-              <div class="slot-tooltip-stat" id="slot-weapon-stat"></div>
-            </div>
+            <div class="slot-tooltip" id="slot-weapon-tooltip" style="display:none"></div>
           </div>
           <!-- Перчатки — низ слева -->
-          <div class="doll-slot" style="top:140px;left:0" id="slot-gloves" data-slot="gloves">
+          <div class="doll-slot" style="top:140px;left:0" id="slot-gloves" data-slot="gloves" onmouseenter="showGlobalTooltip(this, document.getElementById('slot-gloves-name').textContent, document.getElementById('slot-gloves-stat').textContent)" onmouseleave="hideGlobalTooltip()">
             <div class="slot-box"><span id="slot-gloves-icon">🧤</span></div>
             <div class="slot-label">Перчатки</div>
-            <div class="slot-tooltip">
-              <div class="slot-tooltip-name" id="slot-gloves-name">Пусто</div>
-              <div class="slot-tooltip-stat" id="slot-gloves-stat"></div>
-            </div>
+            <div class="slot-tooltip" id="slot-gloves-tooltip" style="display:none"></div>
           </div>
           <!-- Кольцо — низ справа -->
-          <div class="doll-slot" style="top:140px;right:0" id="slot-ring" data-slot="ring">
+          <div class="doll-slot" style="top:140px;right:0" id="slot-ring" data-slot="ring" onmouseenter="showGlobalTooltip(this, document.getElementById('slot-ring-name').textContent, document.getElementById('slot-ring-stat').textContent)" onmouseleave="hideGlobalTooltip()">
             <div class="slot-box"><span id="slot-ring-icon">💍</span></div>
             <div class="slot-label">Кольцо</div>
-            <div class="slot-tooltip">
-              <div class="slot-tooltip-name" id="slot-ring-name">Пусто</div>
-              <div class="slot-tooltip-stat" id="slot-ring-stat"></div>
-            </div>
+            <div class="slot-tooltip" id="slot-ring-tooltip" style="display:none"></div>
           </div>
           <!-- Обувь — самый низ по центру -->
-          <div class="doll-slot" style="top:215px;left:50%;transform:translateX(-50%)" id="slot-boots" data-slot="boots">
+          <div class="doll-slot" style="top:215px;left:50%;transform:translateX(-50%)" id="slot-boots" data-slot="boots" onmouseenter="showGlobalTooltip(this, document.getElementById('slot-boots-name').textContent, document.getElementById('slot-boots-stat').textContent)" onmouseleave="hideGlobalTooltip()">
             <div class="slot-box"><span id="slot-boots-icon">👢</span></div>
             <div class="slot-label">Обувь</div>
-            <div class="slot-tooltip">
-              <div class="slot-tooltip-name" id="slot-boots-name">Пусто</div>
-              <div class="slot-tooltip-stat" id="slot-boots-stat"></div>
-            </div>
+            <div class="slot-tooltip" id="slot-boots-tooltip" style="display:none"></div>
           </div>
 
         </div>
@@ -535,13 +517,12 @@ function renderInventory(){
   for (let i=0;i<cells;i++){
     const item = charState.inventory[i];
     if (item){
-      html+=`<div class="inv-cell has-item">
+      const esc = s => s.replace(/'/g,"&#39;");
+      html+=`<div class="inv-cell has-item"
+        onmouseenter="showItemTooltip(this,'${esc(item.name)}','${esc(item.desc||'')}')"
+        onmouseleave="hideItemTooltip()">
         ${item.icon||'📦'}
         ${item.qty>1?`<span class="item-qty">${item.qty}</span>`:''}
-        <div class="item-tooltip">
-          <div class="item-tooltip-name">${item.name}</div>
-          <div class="item-tooltip-desc">${item.desc||''}</div>
-        </div>
       </div>`;
     } else {
       html+=`<div class="inv-cell"></div>`;
@@ -769,6 +750,44 @@ function restoreHistory(history){
 }
 
 document.getElementById('btn-logout').addEventListener('click',async()=>{ await signOut(auth); window.location.href='index.html'; });
+
+// ── ГЛОБАЛЬНЫЙ ТУЛТИП ──
+const globalTooltip = document.createElement('div');
+globalTooltip.id = 'global-tooltip';
+globalTooltip.className = 'slot-tooltip';
+globalTooltip.innerHTML = '<div class="slot-tooltip-name" id="gt-name"></div><div class="slot-tooltip-stat" id="gt-stat"></div>';
+document.body.appendChild(globalTooltip);
+
+const globalItemTooltip = document.createElement('div');
+globalItemTooltip.id = 'global-item-tooltip';
+globalItemTooltip.className = 'item-tooltip';
+globalItemTooltip.innerHTML = '<div class="item-tooltip-name" id="git-name"></div><div class="item-tooltip-desc" id="git-desc"></div>';
+document.body.appendChild(globalItemTooltip);
+
+function showGlobalTooltip(el, name, stat) {
+  const tt = document.getElementById('global-tooltip');
+  document.getElementById('gt-name').textContent = name || 'Пусто';
+  document.getElementById('gt-stat').textContent = stat || '';
+  const r = el.getBoundingClientRect();
+  tt.style.left = Math.min(r.left + r.width/2 - 65, window.innerWidth - 150) + 'px';
+  tt.style.top  = Math.max(4, r.top - tt.offsetHeight - 8) + 'px';
+  tt.classList.add('visible');
+}
+function hideGlobalTooltip() {
+  document.getElementById('global-tooltip').classList.remove('visible');
+}
+function showItemTooltip(el, name, desc) {
+  const tt = document.getElementById('global-item-tooltip');
+  document.getElementById('git-name').textContent = name || '';
+  document.getElementById('git-desc').textContent = desc || '';
+  const r = el.getBoundingClientRect();
+  tt.style.left = Math.min(r.left + r.width/2 - 70, window.innerWidth - 160) + 'px';
+  tt.style.top  = Math.max(4, r.top - 80) + 'px';
+  tt.classList.add('visible');
+}
+function hideItemTooltip() {
+  document.getElementById('global-item-tooltip').classList.remove('visible');
+}
 window.goToMenu=()=>{ window.location.href='menu.html'; };
 
 // ══ ПИКСЕЛЬ-АРТ ══
@@ -790,29 +809,21 @@ const WORLD_PALETTES = {
 // Пиксельный рисунок персонажа (48x72 пикселей)
 // Формат: строки пикселей, символы: S=кожа H=волосы B=тело L=ноги .=прозрачный O=контур
 const CHAR_SPRITE = [
-  '..................',
-  '........OOOOO.....',
-  '.......OSHHHSO....',
-  '......OSHSSHSSO...',
-  '......OSSSSSSO....',
-  '......OSSSSSO.....',
-  '......OOSSOO......',
-  '.....OOBBBBBOO....',
-  '....OOBBBBBBBOO...',
-  '....OSBBBBBBSOO...',
-  '....OSBBBBBBBOO...',
-  '....OBBBBBBBBOO...',
-  '....OBBBBBBBBOO...',
-  '....OBBBBBBBBOO...',
-  '....OOBBBBBBOOO...',
-  '....OOBBBBBBOOO...',
-  '....OO.OOOO.OO....',
-  '....OO.OLLLO.OO...',
-  '....OO.OLLLOO.O...',
-  '....OO.OLLOOO.O...',
-  '....OO.OLLO.OO....',
-  '....OO.OLLO.OO....',
-  '....OO.OLLOOO....',
+  '....OOOOO....',
+  '...OSHHHSO...',
+  '...OSSSSO....',
+  '....OOOO.....',
+  '..OOBBBBBOO..',
+  '..OBBBBBBBOO.',
+  '..OBBBBBBBOO.',
+  '..OBBBBBBBOO.',
+  '..OOBBBBBOO..',
+  '..OO.OOO.OO..',
+  '..OO.OLL.OO..',
+  '..OO.OLL.OO..',
+  '..OO.OLL.OO..',
+  '..OO.OLL.OO..',
+  '....OSSSO....',
 ];
 
 function drawPixelDoll(worldTheme, equipment) {
@@ -830,8 +841,12 @@ function drawPixelDoll(worldTheme, equipment) {
   if (equipment?.armor)  colorMap.B = '#505060';
   if (equipment?.helmet) colorMap.H = '#707080';
 
-  const pw = 2, ph = 2; // размер одного пикселя на canvas
-  const offsetX = 6, offsetY = 2;
+  const pw = 3, ph = 3;
+  // Центрируем спрайт на canvas 48x72
+  const spriteW = CHAR_SPRITE[0].length * pw;
+  const spriteH = CHAR_SPRITE.length * ph;
+  const offsetX = Math.floor((W - spriteW) / 2);
+  const offsetY = Math.floor((H - spriteH) / 2) - 4;
 
   CHAR_SPRITE.forEach((row, ry) => {
     for (let cx = 0; cx < row.length; cx++) {
@@ -843,22 +858,18 @@ function drawPixelDoll(worldTheme, equipment) {
     }
   });
 
-  // Добавляем оружие в руку если есть
+  // Меч справа если есть оружие
   if (equipment?.weapon) {
-    const wx = { sword:'⚔️', bow:'🏹', staff:'🪄', default:'🗡️' };
-    // Рисуем пиксельный меч справа от персонажа
     ctx.fillStyle = '#c8c8d0';
-    ctx.fillRect(offsetX+22, offsetY+16, 2, 10);
+    ctx.fillRect(offsetX + spriteW + 2, offsetY + 20, 3, 16);
     ctx.fillStyle = '#a06020';
-    ctx.fillRect(offsetX+20, offsetY+24, 6, 2);
+    ctx.fillRect(offsetX + spriteW, offsetY + 28, 8, 3);
   }
 
   // Шлем поверх головы
   if (equipment?.helmet) {
     ctx.fillStyle = '#808090';
-    ctx.fillRect(offsetX+6, offsetY+2, 10, 4);
-    ctx.fillStyle = pal.outline;
-    ctx.fillRect(offsetX+6, offsetY+2, 10, 1);
+    ctx.fillRect(offsetX + 3, offsetY - 3, spriteW - 6, 4);
   }
 }
 
