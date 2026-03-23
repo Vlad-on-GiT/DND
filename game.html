@@ -763,7 +763,12 @@ const log=document.getElementById('story-log');
 const actionZone=document.getElementById('action-zone');
 const typing=document.getElementById('typing');
 
-function scrollBottom(){ setTimeout(()=>log.scrollTop=log.scrollHeight,60); }
+function scrollBottom(){
+  setTimeout(()=>{
+    const last = log.lastElementChild;
+    if (last) last.scrollIntoView({ behavior:'smooth', block:'end' });
+  }, 100);
+}
 function showTyping(v){ typing.classList.toggle('visible',v); }
 
 function addDMMessage(text){
