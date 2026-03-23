@@ -75,17 +75,31 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .skill-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid var(--border);}
 .skill-dot.filled{background:var(--accent);border-color:var(--accent2);}
 
-/* ── ПОРТРЕТ ГЕРОЯ ── */
-.portrait-wrap{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 10px;}
-.portrait-canvas-wrap{position:relative;width:80px;height:80px;image-rendering:pixelated;}
-#portrait-canvas{width:80px;height:80px;image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid var(--accent);border-radius:6px;background:rgba(0,0,0,0.4);}
-.portrait-name{font-family:var(--font-title);font-size:13px;color:var(--accent-glow);text-align:center;letter-spacing:0.04em;}
-.portrait-class{font-size:11px;color:var(--text-dim);text-align:center;font-style:italic;}
-.portrait-level{display:inline-block;background:color-mix(in srgb,var(--accent) 20%,transparent);border:1px solid var(--accent);border-radius:4px;padding:2px 8px;font-size:11px;color:var(--accent2);font-family:var(--font-title);letter-spacing:0.04em;}
+/* ── MMO EQUIPMENT GRID ── */
+.equip-grid{display:flex;flex-direction:column;gap:6px;}
+.equip-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:center;}
+.equip-empty{width:100%;aspect-ratio:1;}
+.equip-slot{position:relative;cursor:pointer;}
+.equip-slot-inner{
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:6px 4px 3px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  transition:all 0.2s;
+  aspect-ratio:1;
+  justify-content:center;
+}
+.equip-slot:hover .equip-slot-inner{border-color:var(--accent2);background:rgba(255,255,255,0.07);}
+.equip-slot.equipped .equip-slot-inner{border-color:var(--accent);box-shadow:0 0 10px color-mix(in srgb,var(--accent) 25%,transparent);}
+.equip-armor .equip-slot-inner{
+  background:rgba(255,255,255,0.05);
+  border-color:color-mix(in srgb,var(--accent) 40%,transparent);
+}
+.equip-icon{width:36px;height:36px;display:block;}
+.equip-slot-label{font-size:9px;color:var(--text-dim);letter-spacing:0.04em;text-align:center;opacity:0.7;line-height:1.2;}
 
-/* ── ЧЕЛОВЕЧЕК СО СЛОТАМИ (ПИКСЕЛЬ-АРТ) ── */
-.doll-wrap{position:relative;margin:0 auto;width:160px;height:260px;}
-#pixel-doll{image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:0 auto;}
+/* portrait/doll removed */
 .doll-slot{position:absolute;cursor:pointer;transition:all 0.2s;}
 .doll-slot .slot-box{width:36px;height:36px;border:1px solid var(--border);border-radius:6px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:18px;transition:all 0.2s;position:relative;}
 .doll-slot:hover .slot-box{border-color:var(--accent2);background:rgba(255,255,255,0.08);}
@@ -272,70 +286,92 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
   <!-- ══ ПРАВАЯ ПАНЕЛЬ: ЭКИПИРОВКА + ИНВЕНТАРЬ ══ -->
   <div class="side-panel" id="right-panel">
 
-    <!-- Человечек со слотами -->
+    <!-- ══ ЭКИПИРОВКА ══ -->
     <div class="panel-card">
       <div class="panel-header">
-        <span class="panel-header-icon">🧍</span>
+        <span class="panel-header-icon">⚔</span>
         <span class="panel-header-title">Экипировка</span>
       </div>
-      <div class="panel-body" style="padding:10px 8px;">
-        <div style="position:relative;width:100%;height:260px;">
+      <div class="panel-body" style="padding:12px 10px;">
 
-          <!-- Пиксель-арт человечек -->
-          <canvas id="pixel-doll" width="48" height="72" style="position:absolute;left:50%;top:16px;transform:translateX(-50%);width:80px;height:120px;"></canvas>
+        <!-- MMO Equipment Grid -->
+        <div class="equip-grid">
 
-          <!-- Слоты вокруг человечка -->
-          <!-- Шлем — верх по центру -->
-          <div class="doll-slot" style="top:0;left:50%;transform:translateX(-50%)" id="slot-helmet" data-slot="helmet" data-has-tip="1">
-            <div class="slot-box"><span id="slot-helmet-icon">⛑️</span></div>
-            <div class="slot-label">Шлем</div>
-            <div class="slot-tooltip" id="slot-helmet-tooltip" style="display:none"></div>
-          </div>
-          <!-- Броня — середина слева -->
-          <div class="doll-slot" style="top:70px;left:0" id="slot-armor" data-slot="armor" data-has-tip="1">
-            <div class="slot-box"><span id="slot-armor-icon">🛡️</span></div>
-            <div class="slot-label">Броня</div>
-            <div class="slot-tooltip" id="slot-armor-tooltip" style="display:none"></div>
-          </div>
-          <!-- Оружие — середина справа -->
-          <div class="doll-slot" style="top:70px;right:0" id="slot-weapon" data-slot="weapon" data-has-tip="1">
-            <div class="slot-box"><span id="slot-weapon-icon">⚔️</span></div>
-            <div class="slot-label">Оружие</div>
-            <div class="slot-tooltip" id="slot-weapon-tooltip" style="display:none"></div>
-          </div>
-          <!-- Перчатки — низ слева -->
-          <div class="doll-slot" style="top:140px;left:0" id="slot-gloves" data-slot="gloves" data-has-tip="1">
-            <div class="slot-box"><span id="slot-gloves-icon">🧤</span></div>
-            <div class="slot-label">Перчатки</div>
-            <div class="slot-tooltip" id="slot-gloves-tooltip" style="display:none"></div>
-          </div>
-          <!-- Кольцо — низ справа -->
-          <div class="doll-slot" style="top:140px;right:0" id="slot-ring" data-slot="ring" data-has-tip="1">
-            <div class="slot-box"><span id="slot-ring-icon">💍</span></div>
-            <div class="slot-label">Кольцо</div>
-            <div class="slot-tooltip" id="slot-ring-tooltip" style="display:none"></div>
-          </div>
-          <!-- Обувь — самый низ по центру -->
-          <div class="doll-slot" style="top:215px;left:50%;transform:translateX(-50%)" id="slot-boots" data-slot="boots" data-has-tip="1">
-            <div class="slot-box"><span id="slot-boots-icon">👢</span></div>
-            <div class="slot-label">Обувь</div>
-            <div class="slot-tooltip" id="slot-boots-tooltip" style="display:none"></div>
+          <!-- Ряд 1: Шлем по центру -->
+          <div class="equip-row">
+            <div class="equip-empty"></div>
+            <div class="equip-slot" id="slot-helmet" data-has-tip="1" data-slot="helmet" data-tip-name="Пусто" data-tip-stat="">
+              <div class="equip-slot-inner">
+                <svg viewBox="0 0 40 40" class="equip-icon"><defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8899cc"/><stop offset="100%" stop-color="#445588"/></linearGradient></defs><path d="M20 4 C10 4 6 12 6 18 L6 26 C6 28 8 30 10 30 L12 30 L12 28 C12 26 14 25 16 25 L24 25 C26 25 28 26 28 28 L28 30 L30 30 C32 30 34 28 34 26 L34 18 C34 12 30 4 20 4Z" fill="url(#hg)" stroke="#aabbee" stroke-width="1.2"/><path d="M12 18 C12 14 15 10 20 10 C25 10 28 14 28 18" fill="none" stroke="#ccddff" stroke-width="1.5"/><path d="M6 22 L34 22" stroke="#6677aa" stroke-width="0.8" stroke-dasharray="2,2"/><circle cx="20" cy="8" r="2" fill="#ccddff" opacity="0.6"/></svg>
+                <span class="equip-slot-label">Шлем</span>
+              </div>
+            </div>
+            <div class="equip-empty"></div>
           </div>
 
-        </div>
+          <!-- Ряд 2: Оружие | Броня | Кольцо 1 -->
+          <div class="equip-row">
+            <div class="equip-slot" id="slot-weapon" data-has-tip="1" data-slot="weapon" data-tip-name="Пусто" data-tip-stat="">
+              <div class="equip-slot-inner">
+                <svg viewBox="0 0 40 40" class="equip-icon"><defs><linearGradient id="wg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ccccdd"/><stop offset="100%" stop-color="#778899"/></linearGradient><linearGradient id="wh" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#cc9944"/><stop offset="100%" stop-color="#886622"/></linearGradient></defs><rect x="18" y="4" width="4" height="26" rx="1.5" fill="url(#wg)"/><rect x="10" y="18" width="20" height="4" rx="2" fill="url(#wh)"/><polygon points="20,2 17,8 23,8" fill="#eeeeff"/><rect x="19" y="30" width="2" height="6" rx="1" fill="#aa8833"/><circle cx="20" cy="37" r="2" fill="#cc9944"/></svg>
+                <span class="equip-slot-label">Оружие</span>
+              </div>
+            </div>
+            <div class="equip-slot equip-armor" id="slot-armor" data-has-tip="1" data-slot="armor" data-tip-name="Пусто" data-tip-stat="">
+              <div class="equip-slot-inner">
+                <svg viewBox="0 0 40 40" class="equip-icon"><defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8899bb"/><stop offset="100%" stop-color="#334466"/></linearGradient></defs><path d="M20 4 L8 10 L8 22 C8 30 14 36 20 38 C26 36 32 30 32 22 L32 10 Z" fill="url(#ag)" stroke="#aabbcc" stroke-width="1.2"/><path d="M20 4 L20 38" stroke="#6677aa" stroke-width="0.8"/><path d="M8 16 L32 16" stroke="#aabbcc" stroke-width="0.8"/><path d="M12 10 C12 8 16 6 20 6 C24 6 28 8 28 10" fill="none" stroke="#ccddee" stroke-width="1.5"/><circle cx="20" cy="22" r="4" fill="#5566aa" stroke="#8899cc" stroke-width="1"/></svg>
+                <span class="equip-slot-label">Броня</span>
+              </div>
+            </div>
+            <div class="equip-slot" id="slot-ring" data-has-tip="1" data-slot="ring" data-tip-name="Пусто" data-tip-stat="">
+              <div class="equip-slot-inner">
+                <svg viewBox="0 0 40 40" class="equip-icon"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ddaa44"/><stop offset="100%" stop-color="#aa7722"/></linearGradient></defs><circle cx="20" cy="22" r="9" fill="none" stroke="url(#rg)" stroke-width="4"/><circle cx="20" cy="22" r="6" fill="none" stroke="#cc9933" stroke-width="1"/><polygon points="20,8 17,15 23,15" fill="#ee4444"/><polygon points="18,7 22,7 21,12 19,12" fill="#cc2222"/><circle cx="20" cy="6" r="2" fill="#ff6666"/></svg>
+                <span class="equip-slot-label">Кольцо 1</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ряд 3: Перчатки | (пусто) | Кольцо 2 -->
+          <div class="equip-row">
+            <div class="equip-slot" id="slot-gloves" data-has-tip="1" data-slot="gloves" data-tip-name="Пусто" data-tip-stat="">
+              <div class="equip-slot-inner">
+                <svg viewBox="0 0 40 40" class="equip-icon"><defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#996644"/><stop offset="100%" stop-color="#664422"/></linearGradient></defs><path d="M14 36 L14 20 C14 18 16 17 17 17 L17 12 C17 10 19 9 20 10 L20 17 L21 17 L21 10 C21 8 24 8 24 10 L24 17 L25 17 L25 11 C25 9 28 9 28 11 L28 18 C29 17 31 17 31 19 L31 26 C31 32 28 36 24 36 Z" fill="url(#gg)" stroke="#bb8855" stroke-width="1"/><path d="M17 17 L17 22 M21 17 L21 22 M25 17 L25 22" stroke="#bb8855" stroke-width="0.8"/></svg>
+                <span class="equip-slot-label">Перчатки</span>
+              </div>
+            </div>
+            <div class="equip-empty"></div>
+            <div class="equip-slot" id="slot-ring2" data-has-tip="1" data-slot="ring2" data-tip-name="Пусто" data-tip-stat="">
+              <div class="equip-slot-inner">
+                <svg viewBox="0 0 40 40" class="equip-icon"><defs><linearGradient id="r2g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#44aadd"/><stop offset="100%" stop-color="#2277aa"/></linearGradient></defs><circle cx="20" cy="22" r="9" fill="none" stroke="url(#r2g)" stroke-width="4"/><circle cx="20" cy="22" r="6" fill="none" stroke="#3388cc" stroke-width="1"/><polygon points="20,8 17,15 23,15" fill="#44ddff"/><polygon points="18,7 22,7 21,12 19,12" fill="#22aacc"/><circle cx="20" cy="6" r="2" fill="#88eeff"/></svg>
+                <span class="equip-slot-label">Кольцо 2</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ряд 4: Ботинки по центру -->
+          <div class="equip-row">
+            <div class="equip-empty"></div>
+            <div class="equip-slot" id="slot-boots" data-has-tip="1" data-slot="boots" data-tip-name="Пусто" data-tip-stat="">
+              <div class="equip-slot-inner">
+                <svg viewBox="0 0 40 40" class="equip-icon"><defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#774433"/><stop offset="100%" stop-color="#442211"/></linearGradient></defs><path d="M14 8 L14 26 C14 28 13 30 10 32 L10 34 C10 35 11 36 12 36 L30 36 C31 36 32 35 32 34 L32 32 L20 32 C18 32 16 30 16 28 L16 8 Z" fill="url(#bg)" stroke="#996655" stroke-width="1.2"/><path d="M16 16 C18 15 22 15 24 16" stroke="#aa7755" stroke-width="1" fill="none"/><path d="M16 20 C18 19 22 19 24 20" stroke="#aa7755" stroke-width="1" fill="none"/><path d="M16 24 C18 23 20 23 22 24" stroke="#aa7755" stroke-width="1" fill="none"/></svg>
+                <span class="equip-slot-label">Ботинки</span>
+              </div>
+            </div>
+            <div class="equip-empty"></div>
+          </div>
+
+        </div><!-- /equip-grid -->
       </div>
     </div>
 
-    <!-- Инвентарь -->
+    <!-- ══ ИНВЕНТАРЬ ══ -->
     <div class="panel-card">
       <div class="panel-header">
         <span class="panel-header-icon">🎒</span>
         <span class="panel-header-title">Инвентарь</span>
       </div>
       <div class="panel-body">
-        <div class="inv-grid" id="inv-grid">
-          <!-- 12 ячеек, заполняется JS -->
-        </div>
+        <div class="inv-grid" id="inv-grid"></div>
         <div class="gold-row">
           <span class="gold-icon">🪙</span>
           <span class="gold-label">Золото</span>
@@ -429,7 +465,7 @@ const charState = {
     {name:'Красноречие',level:1},{name:'Скрытность',level:1},
     {name:'Атака',level:1},{name:'Магия',level:1},{name:'Торговля',level:1},
   ],
-  equipment:{ helmet:null, armor:null, weapon:null, gloves:null, ring:null, boots:null },
+  equipment:{ helmet:null, armor:null, weapon:null, gloves:null, ring:null, ring2:null, boots:null },
   inventory:[], gold:0,
 };
 
@@ -571,24 +607,33 @@ function renderSkills(){
 }
 
 function renderEquipment(){
-  const slots=['helmet','armor','weapon','gloves','ring','boots'];
-  const defaultIcons={helmet:'⛑️',armor:'🛡️',weapon:'⚔️',gloves:'🧤',ring:'💍',boots:'👢'};
+  const slots=['helmet','armor','weapon','gloves','ring','ring2','boots'];
   slots.forEach(slot=>{
     const item   = charState.equipment[slot];
-    const iconEl = document.getElementById(`slot-${slot}-icon`);
-    const slotEl = document.getElementById(`slot-${slot}`);
-    if (!iconEl || !slotEl) return;
+    const slotEl = document.getElementById('slot-'+slot);
+    if (!slotEl) return;
     if (item){
-      iconEl.textContent = item.icon||defaultIcons[slot];
-      // Храним данные тултипа в data-атрибутах
       slotEl.dataset.tipName = item.name||'Предмет';
       slotEl.dataset.tipStat = item.stat||'';
       slotEl.classList.add('equipped');
+      // Показываем иконку предмета поверх SVG если есть emoji
+      const inner = slotEl.querySelector('.equip-slot-inner');
+      if (inner && item.icon) {
+        let eIcon = inner.querySelector('.item-emoji-icon');
+        if (!eIcon) {
+          eIcon = document.createElement('div');
+          eIcon.className = 'item-emoji-icon';
+          eIcon.style.cssText = 'position:absolute;top:4px;right:4px;font-size:14px;line-height:1;';
+          inner.appendChild(eIcon);
+        }
+        eIcon.textContent = item.icon;
+      }
     } else {
-      iconEl.textContent = defaultIcons[slot];
       slotEl.dataset.tipName = 'Пусто';
       slotEl.dataset.tipStat = '';
       slotEl.classList.remove('equipped');
+      const inner = slotEl.querySelector('.equip-slot-inner');
+      if (inner) { const e = inner.querySelector('.item-emoji-icon'); if(e) e.remove(); }
     }
   });
 }
