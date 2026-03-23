@@ -873,6 +873,9 @@ window.launchGame = function() {
     thinkingText:  world.thinkingText,
     worldPrompt:   world.prompt,
     playerName:    heroName,
+    charClass:     charData.name,
+    charIcon:      charData.icon,
+    startKit:      { items: kit.items, gold: kit.title.includes('монет') ? 500 : 0 },
     playerUid,
   }));
 
