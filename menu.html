@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Врата Миров</title>
+<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400;1,600&family=Cinzel:wght@400;600&family=Raleway:wght@300;400;600&family=Special+Elite&family=Orbitron:wght@400;600&family=Caveat:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ══ CSS ПЕРЕМЕННЫЕ — нейтральная тема ══ */
+:root {
+  --bg:         #0b0b12;
+  --bg-mid:     #13131e;
+  --accent:     #6060b0;
+  --accent2:    #8080cc;
+  --accent-glow:#a0a0ee;
+  --text:       #dcdcf0;
+  --text-dim:   #8888aa;
+  --card-bg:    rgba(25,25,45,0.85);
+  --border:     rgba(90,90,170,0.25);
+  --glow1:      rgba(70,70,150,0.18);
+  --glow2:      rgba(40,40,100,0.13);
+  --glow3:      rgba(50,50,120,0.10);
+  --font-title: 'Cinzel', serif;
+  --font-body:  'Raleway', sans-serif;
+}
+
+/* ══ ТЕМЫ МИРОВ ══ */
+body.theme-morrowind {
+  --bg:#1a1410;--bg-mid:#221c15;--accent:#c4622a;--accent2:#d4923a;--accent-glow:#f0b84a;
+  --text:#e8d5b0;--text-dim:#c4a97a;--card-bg:rgba(46,36,25,0.88);--border:rgba(196,98,42,0.3);
+  --glow1:rgba(196,98,42,0.22);--glow2:rgba(74,48,96,0.16);--glow3:rgba(122,32,32,0.12);
+  --font-title:'Uncial Antiqua',serif;--font-body:'Crimson Pro',serif;
+}
+body.theme-lotr {
+  --bg:#0c1208;--bg-mid:#121a0d;--accent:#6a9a3a;--accent2:#8abf52;--accent-glow:#aada70;
+  --text:#e8f0d8;--text-dim:#a8c080;--card-bg:rgba(18,26,10,0.9);--border:rgba(100,160,50,0.3);
+  --glow1:rgba(80,140,40,0.2);--glow2:rgba(40,80,20,0.14);--glow3:rgba(60,100,30,0.10);
+  --font-title:'IM Fell English',serif;--font-body:'Crimson Pro',serif;
+}
+body.theme-hp {
+  --bg:#09071a;--bg-mid:#0f0d22;--accent:#8b5cf6;--accent2:#a78bfa;--accent-glow:#c4b5fd;
+  --text:#ede9fe;--text-dim:#a78bfa;--card-bg:rgba(18,14,40,0.92);--border:rgba(139,92,246,0.32);
+  --glow1:rgba(139,92,246,0.22);--glow2:rgba(88,28,220,0.16);--glow3:rgba(60,20,160,0.12);
+  --font-title:'Cinzel',serif;--font-body:'Raleway',sans-serif;
+}
+body.theme-witcher {
+  --bg:#0f0c08;--bg-mid:#181410;--accent:#c8a94a;--accent2:#e0c870;--accent-glow:#f0d880;
+  --text:#e8e0c8;--text-dim:#b8a880;--card-bg:rgba(28,22,12,0.92);--border:rgba(200,169,74,0.3);
+  --glow1:rgba(180,140,40,0.2);--glow2:rgba(100,80,20,0.14);--glow3:rgba(60,40,10,0.12);
+  --font-title:'IM Fell English',serif;--font-body:'Crimson Pro',serif;
+}
+body.theme-starwars {
+  --bg:#02040a;--bg-mid:#050810;--accent:#00aaff;--accent2:#40c8ff;--accent-glow:#80e0ff;
+  --text:#d0eeff;--text-dim:#6090b0;--card-bg:rgba(4,8,20,0.94);--border:rgba(0,150,255,0.28);
+  --glow1:rgba(0,120,255,0.18);--glow2:rgba(0,60,160,0.14);--glow3:rgba(0,30,100,0.10);
+  --font-title:'Orbitron',sans-serif;--font-body:'Raleway',sans-serif;
+}
+body.theme-lego {
+  --bg:#1a0a00;--bg-mid:#221000;--accent:#f7c200;--accent2:#ff6600;--accent-glow:#ffdd44;
+  --text:#fff8e0;--text-dim:#d4a840;--card-bg:rgba(40,20,0,0.92);--border:rgba(247,194,0,0.38);
+  --glow1:rgba(255,180,0,0.22);--glow2:rgba(255,100,0,0.16);--glow3:rgba(200,80,0,0.12);
+  --font-title:'Special Elite',cursive;--font-body:'Raleway',sans-serif;
+}
+body.theme-alice {
+  --bg:#07041a;--bg-mid:#0c0820;--accent:#e040fb;--accent2:#ea80fc;--accent-glow:#f3b8ff;
+  --text:#fce4ff;--text-dim:#c880e0;--card-bg:rgba(18,8,34,0.94);--border:rgba(220,60,250,0.3);
+  --glow1:rgba(200,40,240,0.2);--glow2:rgba(100,0,160,0.16);--glow3:rgba(60,0,120,0.12);
+  --font-title:'Caveat',cursive;--font-body:'Raleway',sans-serif;
+}
+body.theme-stardew {
+  --bg:#0a1608;--bg-mid:#101e0e;--accent:#7bc67e;--accent2:#a5d6a7;--accent-glow:#c8e6c9;
+  --text:#e8f5e9;--text-dim:#81c784;--card-bg:rgba(12,26,10,0.94);--border:rgba(100,200,100,0.3);
+  --glow1:rgba(80,180,80,0.2);--glow2:rgba(40,120,40,0.14);--glow3:rgba(20,80,20,0.12);
+  --font-title:'Caveat',cursive;--font-body:'Raleway',sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  min-height: 100vh;
+  font-family: var(--font-body), sans-serif;
+  color: var(--text);
+  transition: background 0.6s ease, color 0.5s ease;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 120% 55% at 50% 100%, var(--glow1) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 40% at 85% 5%, var(--glow2) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 5% 40%, var(--glow3) 0%, transparent 55%);
+  transition: background 0.6s ease;
+}
+
+/* ══ ШАПКА ══ */
+.top-bar {
+  position: relative; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  transition: border-color 0.5s;
+}
+.top-bar-title {
+  font-family: var(--font-title);
+  font-size: 18px;
+  color: var(--accent-glow);
+  text-shadow: 0 0 20px var(--glow1);
+  transition: all 0.5s;
+}
+.top-user {
+  display: flex; align-items: center; gap: 12px;
+}
+.user-name { font-size: 14px; color: var(--text-dim); font-style: italic; }
+.user-name span { color: var(--accent2); font-style: normal; }
+.btn-logout {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-dim);
+  font-size: 13px; padding: 5px 12px; cursor: pointer;
+  transition: all 0.2s; opacity: 0.65;
+}
+.btn-logout:hover { border-color: var(--accent); color: var(--text); opacity: 1; }
+
+/* ══ СТРАНИЦЫ ══ */
+.page { display: none; position: relative; z-index: 1; }
+.page.active { display: flex; flex-direction: column; }
+
+/* ══ СТРАНИЦА: ГЛАВНАЯ ══ */
+#page-home {
+  min-height: calc(100vh - 53px);
+  align-items: center; justify-content: center;
+  padding: 40px 24px;
+  gap: 24px; text-align: center;
+}
+.home-emblem {
+  font-size: 80px; line-height: 1;
+  animation: breathe 3.5s ease-in-out infinite;
+  transition: all 0.5s;
+}
+@keyframes breathe {
+  0%,100% { filter: drop-shadow(0 0 10px var(--glow1)); transform: scale(1); }
+  50%      { filter: drop-shadow(0 0 35px var(--accent-glow)); transform: scale(1.05); }
+}
+.home-title {
+  font-family: var(--font-title);
+  font-size: clamp(28px, 6vw, 52px);
+  color: var(--accent-glow);
+  text-shadow: 0 0 40px var(--glow1), 0 2px 8px rgba(0,0,0,0.9);
+  letter-spacing: 0.06em; line-height: 1.15;
+  transition: all 0.5s;
+}
+.home-sub {
+  font-size: 16px; color: var(--text-dim); font-style: italic; opacity: 0.8;
+}
+.home-btns {
+  display: flex; flex-direction: column; gap: 12px;
+  width: 100%; max-width: 340px;
+}
+.btn-main {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 35%, transparent), color-mix(in srgb, var(--accent) 15%, transparent));
+  border: 1px solid var(--accent);
+  border-radius: 9px; color: var(--accent-glow);
+  font-family: var(--font-title); font-size: 17px;
+  padding: 15px 32px; cursor: pointer;
+  transition: all 0.3s; letter-spacing: 0.05em;
+}
+.btn-main:hover { box-shadow: 0 0 28px color-mix(in srgb, var(--accent) 50%, transparent); transform: scale(1.03); }
+.btn-secondary-home {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 9px; color: var(--text-dim);
+  font-family: var(--font-title); font-size: 14px;
+  padding: 11px 24px; cursor: pointer;
+  transition: all 0.25s; opacity: 0.7; letter-spacing: 0.04em;
+}
+.btn-secondary-home:hover { border-color: var(--accent); color: var(--text); opacity: 1; }
+.save-hint { font-size: 12px; color: var(--text-dim); font-style: italic; opacity: 0.4; }
+.divider-line {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--text-dim); font-size: 12px; opacity: 0.4; width: 100%; max-width: 340px;
+}
+.divider-line::before, .divider-line::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ══ СТРАНИЦА: ВЫБОР МИРА ══ */
+#page-worlds {
+  padding: 32px 20px 40px;
+  max-width: 860px; margin: 0 auto; width: 100%;
+  gap: 24px;
+}
+.page-header {
+  text-align: center;
+}
+.step-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); opacity: 0.7; }
+.page-title {
+  font-family: var(--font-title);
+  font-size: clamp(20px, 4vw, 28px);
+  color: var(--accent-glow);
+  margin-top: 6px; transition: all 0.4s;
+}
+
+.worlds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+.world-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px 14px;
+  cursor: pointer; text-align: center;
+  transition: all 0.3s ease;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  position: relative; overflow: hidden;
+}
+.world-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--world-color, var(--accent)) 20%, transparent) 0%, transparent 70%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.world-card:hover { transform: translateY(-4px); border-color: var(--accent2); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+.world-card:hover::after { opacity: 1; }
+.world-card.selected { border-color: var(--accent-glow); box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent); }
+.world-card.selected::after { opacity: 1; }
+.world-icon { font-size: 40px; line-height: 1; position: relative; z-index: 1; }
+.world-name { font-family: var(--font-title); font-size: 14px; color: var(--accent2); letter-spacing: 0.03em; position: relative; z-index: 1; }
+.world-desc { font-size: 12px; color: var(--text-dim); opacity: 0.75; line-height: 1.4; font-style: italic; position: relative; z-index: 1; }
+
+/* ══ СТРАНИЦЫ: ПЕРСОНАЖ / ПРЕДЫСТОРИЯ / СЛОЖНОСТЬ / ИНВЕНТАРЬ ══ */
+.step-page {
+  padding: 32px 20px 40px;
+  max-width: 600px; margin: 0 auto; width: 100%;
+  gap: 22px;
+}
+.chars-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px;
+}
+.char-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 12px;
+  cursor: pointer; text-align: center;
+  transition: all 0.25s; display: flex; flex-direction: column; align-items: center; gap: 7px;
+}
+.char-card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+.char-card.selected { border-color: var(--accent-glow); background: color-mix(in srgb, var(--accent) 15%, var(--card-bg)); }
+.char-icon { font-size: 30px; }
+.char-name { font-family: var(--font-title); font-size: 13px; color: var(--accent2); }
+.char-desc { font-size: 11px; color: var(--text-dim); opacity: 0.7; line-height: 1.35; font-style: italic; }
+
+.backstories-list { display: flex; flex-direction: column; gap: 9px; }
+.backstory-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 9px; padding: 13px 15px;
+  cursor: pointer; transition: all 0.22s;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.backstory-card:hover { border-color: var(--accent2); }
+.backstory-card.selected { border-color: var(--accent-glow); background: color-mix(in srgb, var(--accent) 12%, var(--card-bg)); }
+.backstory-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+.backstory-title { font-family: var(--font-title); font-size: 13px; color: var(--accent2); }
+.backstory-text { font-size: 12px; color: var(--text-dim); opacity: 0.72; font-style: italic; margin-top: 3px; line-height: 1.4; }
+
+.diff-list { display: flex; flex-direction: column; gap: 10px; }
+.diff-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 16px;
+  cursor: pointer; transition: all 0.25s;
+  display: flex; align-items: center; gap: 14px;
+}
+.diff-card:hover { border-color: var(--accent2); }
+.diff-card.selected { border-color: var(--accent-glow); background: color-mix(in srgb, var(--accent) 12%, var(--card-bg)); }
+.diff-icon { font-size: 28px; flex-shrink: 0; }
+.diff-name { font-family: var(--font-title); font-size: 14px; color: var(--accent2); }
+.diff-desc { font-size: 12px; color: var(--text-dim); opacity: 0.7; margin-top: 3px; line-height: 1.35; }
+
+.field-group { display: flex; flex-direction: column; gap: 8px; }
+.field-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); opacity: 0.7; }
+.field-input {
+  background: color-mix(in srgb, var(--accent) 6%, var(--card-bg));
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 14px; color: var(--text);
+  font-family: var(--font-body); font-size: 17px;
+  outline: none; transition: all 0.25s; width: 100%;
+}
+.field-input::placeholder { color: color-mix(in srgb, var(--text-dim) 50%, transparent); }
+.field-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+
+/* ══ НАВИГАЦИЯ ══ */
+.step-nav {
+  display: flex; gap: 10px; margin-top: 4px;
+}
+.steps-bar { display: flex; gap: 7px; align-items: center; justify-content: center; }
+.step-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--border); transition: all 0.3s;
+}
+.step-dot.active { background: var(--accent-glow); box-shadow: 0 0 8px var(--accent-glow); }
+.step-dot.done { background: var(--accent); }
+
+.btn-next {
+  flex: 1;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), color-mix(in srgb, var(--accent) 15%, transparent));
+  border: 1px solid var(--accent); border-radius: 8px;
+  color: var(--accent-glow); font-family: var(--font-title);
+  font-size: 15px; padding: 12px 20px; cursor: pointer;
+  transition: all 0.25s; letter-spacing: 0.04em;
+}
+.btn-next:hover { box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent); }
+.btn-next:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+.btn-back {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text-dim); font-family: var(--font-body);
+  font-size: 14px; padding: 12px 18px; cursor: pointer;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.btn-back:hover { border-color: var(--accent); color: var(--text); }
+
+/* ══ ЗАГРУЗКА ══ */
+#auth-loading {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); transition: opacity 0.5s;
+}
+#auth-loading.hidden { opacity: 0; pointer-events: none; }
+.loading-emblem { font-size: 54px; animation: breathe 2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<div id="auth-loading"><div class="loading-emblem">🌐</div></div>
+
+<!-- ══ ШАПКА ══ -->
+<div class="top-bar">
+  <div class="top-bar-title" id="top-title">Врата Миров</div>
+  <div class="top-user">
+    <div class="user-name" id="user-name-label">...</div>
+    <button class="btn-logout" id="btn-logout">Выйти</button>
+  </div>
+</div>
+
+<!-- ══ СТРАНИЦА: ГЛАВНАЯ ══ -->
+<div class="page active" id="page-home">
+  <div class="home-emblem" id="home-emblem">🌐</div>
+  <div class="home-title" id="home-title">Врата Миров</div>
+  <div class="home-sub" id="home-sub">Добро пожаловать, странник...</div>
+  <div class="home-btns" id="home-btns">
+    <!-- заполняется JS -->
+  </div>
+</div>
+
+<!-- ══ СТРАНИЦА: ВЫБОР МИРА ══ -->
+<div class="page" id="page-worlds">
+  <div class="page-header">
+    <div class="steps-bar">
+      <div class="step-dot active"></div><div class="step-dot"></div>
+      <div class="step-dot"></div><div class="step-dot"></div><div class="step-dot"></div>
+    </div>
+    <div class="step-label" style="margin-top:10px;">Шаг 1 из 5</div>
+    <div class="page-title">В какой мир ты отправишься?</div>
+  </div>
+  <div class="worlds-grid" id="worlds-grid"></div>
+  <div class="step-nav">
+    <button class="btn-back" onclick="showPage('page-home')">← Назад</button>
+    <button class="btn-next" id="btn-world-next" disabled onclick="showPage('page-char')">Войти в этот мир →</button>
+  </div>
+</div>
+
+<!-- ══ СТРАНИЦА: ПЕРСОНАЖ ══ -->
+<div class="page step-page" id="page-char">
+  <div class="page-header">
+    <div class="steps-bar">
+      <div class="step-dot done"></div><div class="step-dot active"></div>
+      <div class="step-dot"></div><div class="step-dot"></div><div class="step-dot"></div>
+    </div>
+    <div class="step-label" style="margin-top:10px;">Шаг 2 из 5</div>
+    <div class="page-title" id="char-page-title">Выбери своего героя</div>
+  </div>
+  <div class="chars-grid" id="chars-grid"></div>
+  <div class="step-nav">
+    <button class="btn-back" onclick="showPage('page-worlds')">← Назад</button>
+    <button class="btn-next" id="btn-char-next" disabled onclick="showPage('page-backstory')">Это я →</button>
+  </div>
+</div>
+
+<!-- ══ СТРАНИЦА: ПРЕДЫСТОРИЯ ══ -->
+<div class="page step-page" id="page-backstory">
+  <div class="page-header">
+    <div class="steps-bar">
+      <div class="step-dot done"></div><div class="step-dot done"></div>
+      <div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div>
+    </div>
+    <div class="step-label" style="margin-top:10px;">Шаг 3 из 5 — Имя и история</div>
+    <div class="page-title">Кем ты был до этого?</div>
+  </div>
+  <div class="field-group">
+    <label class="field-label">Имя героя</label>
+    <input class="field-input" id="hero-name" placeholder="Как тебя зовут?" maxlength="30" oninput="checkBackstoryStep()"/>
+  </div>
+  <div class="backstories-list" id="backstories-list"></div>
+  <div class="step-nav">
+    <button class="btn-back" onclick="showPage('page-char')">← Назад</button>
+    <button class="btn-next" id="btn-backstory-next" disabled onclick="showPage('page-diff')">Дальше →</button>
+  </div>
+</div>
+
+<!-- ══ СТРАНИЦА: СЛОЖНОСТЬ ══ -->
+<div class="page step-page" id="page-diff">
+  <div class="page-header">
+    <div class="steps-bar">
+      <div class="step-dot done"></div><div class="step-dot done"></div>
+      <div class="step-dot done"></div><div class="step-dot active"></div><div class="step-dot"></div>
+    </div>
+    <div class="step-label" style="margin-top:10px;">Шаг 4 из 5</div>
+    <div class="page-title">Насколько жестоким будет мир?</div>
+  </div>
+  <div class="diff-list">
+    <div class="diff-card" id="diff-easy" onclick="selectDiff('easy')">
+      <div class="diff-icon">🌿</div>
+      <div><div class="diff-name">Сказочное приключение</div><div class="diff-desc">Мир добрее, враги слабее. Акцент на историю и выборы. Идеально для первой игры</div></div>
+    </div>
+    <div class="diff-card" id="diff-normal" onclick="selectDiff('normal')">
+      <div class="diff-icon">⚔️</div>
+      <div><div class="diff-name">Обычный герой</div><div class="diff-desc">Классический баланс. Риски реальны, победы заслужены</div></div>
+    </div>
+    <div class="diff-card" id="diff-hard" onclick="selectDiff('hard')">
+      <div class="diff-icon">💀</div>
+      <div><div class="diff-name">Тёмная история</div><div class="diff-desc">Мир безжалостен. Каждый выбор имеет цену. Смерть возможна</div></div>
+    </div>
+  </div>
+  <div class="step-nav">
+    <button class="btn-back" onclick="showPage('page-backstory')">← Назад</button>
+    <button class="btn-next" id="btn-diff-next" disabled onclick="showPage('page-kit')">Принять судьбу →</button>
+  </div>
+</div>
+
+<!-- ══ СТРАНИЦА: ИНВЕНТАРЬ ══ -->
+<div class="page step-page" id="page-kit">
+  <div class="page-header">
+    <div class="steps-bar">
+      <div class="step-dot done"></div><div class="step-dot done"></div>
+      <div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot active"></div>
+    </div>
+    <div class="step-label" style="margin-top:10px;">Шаг 5 из 5</div>
+    <div class="page-title">С чем ты отправишься в путь?</div>
+  </div>
+  <div class="backstories-list" id="kits-list"></div>
+  <div class="step-nav">
+    <button class="btn-back" onclick="showPage('page-diff')">← Назад</button>
+    <button class="btn-next" id="btn-kit-next" disabled onclick="launchGame()">⚔ Начать приключение</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }     from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+import { getFirestore, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import firebaseConfig from "./firebase-config.js";
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ══ ДАННЫЕ МИРОВ ══════════════════════════════════════════
+const WORLDS = [
+  {
+    id:'morrowind', theme:'morrowind', icon:'🌋', name:'Морровинд', desc:'Пепельные земли тёмных эльфов',
+    titleText:'🌋 Морровинд · Пепельные земли', subtitleText:'Вварденфелл · Эпоха Третьей Эры',
+    thinkingText:'Хранитель Свитков думает',
+    chars:[
+      {icon:'🗡️',name:'Воин-данмер',desc:'Суровый уроженец острова, мастер клинка'},
+      {icon:'🧙',name:'Маг Телванни',desc:'Отшельник, постигающий запретные знания'},
+      {icon:'🏹',name:'Следопыт',desc:'Имперский разведчик, новоприбывший в Сейда Нин'},
+      {icon:'🗺️',name:'Торговец',desc:'Хитрый авантюрист с тёмным прошлым'},
+    ],
+    backstories:[
+      {icon:'⛓️',title:'Беглец',text:'Ты бежишь от прошлого — долгов, преступлений или предательства'},
+      {icon:'📜',title:'Избранный',text:'Имперский агент прочитал пророчество о тебе. Ты сам не понимаешь что это значит'},
+      {icon:'💀',title:'Мститель',text:'Кто-то убил твою семью. Ты узнал, что след ведёт на Вварденфелл'},
+      {icon:'🔍',title:'Искатель',text:'Ты слышал о древней двемерской реликвии. Она стоит целое состояние'},
+    ],
+    kits:[
+      {icon:'⚔️',title:'Набор воина',items:['Железный меч','Кожаный нагрудник','Зелье лечения']},
+      {icon:'📜',title:'Набор путника',items:['Карта Вварденфелла','50 золотых монет','Дорожный плащ']},
+      {icon:'🧪',title:'Набор алхимика',items:['3 зелья исцеления','Алхимический набор','Редкий ингредиент']},
+    ],
+    prompt:`Ты — мастер художественного слова, ведущий приключение в мире TES III: Morrowind.\nМИР: Остров Вварденфелл — пепельные равнины, грибные леса, руины Двемеров, башни Телванни. Данмеры (тёмные эльфы) смотрят на чужаков с презрением. Трибунал — три живых бога. Красная гора источает пепельный шторм.\nСлова: "н'вах" (чужак, презрит.), "сера" (уважит.), "дунмер" (тёмный эльф).`,
+  },
+  {
+    id:'lotr', theme:'lotr', icon:'💍', name:'Средиземье', desc:'Мир Властелина Колец',
+    titleText:'💍 Средиземье · Эпоха Кольца', subtitleText:'Властелин Колец · Дж. Р. Р. Толкин',
+    thinkingText:'Гэндальф размышляет',
+    chars:[
+      {icon:'🧝',name:'Эльф',desc:'Древний и мудрый, слышащий пение звёзд'},
+      {icon:'🧙',name:'Маг',desc:'Странник в сером плаще с посохом и тайнами'},
+      {icon:'⚔️',name:'Рыцарь Гондора',desc:'Воин, защищающий последние рубежи людей'},
+      {icon:'🌿',name:'Хоббит',desc:'Маленький и незаметный — но именно это спасёт мир'},
+    ],
+    backstories:[
+      {icon:'🗡️',title:'Хранитель',text:'Тебе доверили нечто важное. Что-то, чего не должна коснуться Тьма'},
+      {icon:'🔥',title:'Изгнанник',text:'Твой народ рассеян. Ты ищешь способ вернуть им дом'},
+      {icon:'⭐',title:'Пророчество',text:'Старый маг сказал: "Ты нужен там, где кончается карта"'},
+      {icon:'💔',title:'Долг',text:'Твой друг погиб. Его дело должно быть завершено'},
+    ],
+    kits:[
+      {icon:'⚔️',title:'Снаряжение воина',items:['Эльфийский кинжал','Кольчуга из митрила','Лембас (дорожный хлеб)']},
+      {icon:'📖',title:'Мудрость странника',items:['Карта Средиземья','Посох путника','Письмо от Гэндальфа']},
+      {icon:'🏹',title:'Набор следопыта',items:['Лук и стрелы','Эльфийский плащ (невидимость)','Эликсир выносливости']},
+    ],
+    prompt:`Ты — рассказчик в мире Средиземья Дж. Р. Р. Толкина. Пиши в духе эпических саг — возвышенно, с ощущением древности и надвигающейся судьбы.\nМИР: Мордор несёт тень на запад. Гондор держит последний рубеж. Эльфы уходят за море. Природа живая и разумная.`,
+  },
+  {
+    id:'hp', theme:'hp', icon:'⚡', name:'Хогвартс', desc:'Мир Гарри Поттера',
+    titleText:'⚡ Хогвартс · Школа Чародейства', subtitleText:'Мир Гарри Поттера · Дж. К. Роулинг',
+    thinkingText:'Дамблдор думает',
+    chars:[
+      {icon:'📚',name:'Отличник',desc:'Умный и упорный — знания твоё главное оружие'},
+      {icon:'😎',name:'Авантюрист',desc:'Нарушаешь правила, но почти всегда в правильных целях'},
+      {icon:'🦉',name:'Следователь',desc:'Любознательный новичок, замечающий то что другие упускают'},
+      {icon:'🐍',name:'Слизеринец',desc:'Амбициозный, с неоднозначной репутацией и полезными связями'},
+    ],
+    backstories:[
+      {icon:'✉️',title:'Письмо',text:'Ты только что узнал что ты волшебник. Мир перевернулся'},
+      {icon:'🕵️',title:'Тайна',text:'В Хогвартсе происходит нечто странное. Учителя скрывают правду'},
+      {icon:'📖',title:'Наследие',text:'Ты нашёл дневник с зашифрованными заметками. Чей-то секрет может изменить всё'},
+      {icon:'🏆',title:'Испытание',text:'Тебя выбрали для опасного турнира. Отказаться нельзя'},
+    ],
+    kits:[
+      {icon:'🪄',title:'Набор первокурсника',items:['Волшебная палочка','Учебник заклинаний','Мантия-невидимка']},
+      {icon:'🦉',title:'Набор исследователя',items:['Карта Хогвартса','Зелье удачи (Феликс Фелицис)','Маховик времени']},
+      {icon:'🧪',title:'Набор зельевара',items:['Набор для зелий','Редкий ингредиент','Книга рецептов Снейпа']},
+    ],
+    prompt:`Ты — рассказчик в мире Гарри Поттера Дж. К. Роулинг. Пиши с духом волшебства, юмора и тайны. Хогвартс живой — лестницы двигаются, портреты разговаривают.\nМИР: Волшебный мир скрыт от маглов. Четыре факультета. Министерство магии. Каждый угол хранит секрет.`,
+  },
+  {
+    id:'witcher', theme:'witcher', icon:'🐺', name:'Ведьмак', desc:'Тёмное фэнтези Сапковского',
+    titleText:'🐺 Материк · Мир Ведьмака', subtitleText:'Анджей Сапковский · Тёмное фэнтези',
+    thinkingText:'Ведьмак размышляет',
+    chars:[
+      {icon:'⚔️',name:'Ведьмак',desc:'Мутант-охотник на монстров. Нет добра и зла — есть меньшее зло'},
+      {icon:'🎵',name:'Бард',desc:'Поэт, авантюрист и свидетель великих событий'},
+      {icon:'🔮',name:'Чародейка',desc:'Маг с политическими интригами и личными целями'},
+      {icon:'🗡️',name:'Разбойник',desc:'Бывший солдат, ищущий смысл после войны'},
+    ],
+    backstories:[
+      {icon:'💰',title:'Контракт',text:'Деревня платит за голову чудовища. Работа простая — до первого взгляда на следы'},
+      {icon:'🌑',title:'Проклятие',text:'Кто-то наложил проклятие на тебя или дорогого тебе человека'},
+      {icon:'⚖️',title:'Долг крови',text:'Закон Удивления связал тебя с незнакомцем. Теперь надо платить'},
+      {icon:'🏚️',title:'Беженец',text:'Война уничтожила твой дом. Ты ищешь место в жестоком мире'},
+    ],
+    kits:[
+      {icon:'⚔️',title:'Снаряжение ведьмака',items:['Серебряный меч','Стальной меч','Знаки Игни и Аард']},
+      {icon:'🧪',title:'Алхимический набор',items:['Ласточка (зелье)','Кошачий глаз','Громовой удар']},
+      {icon:'💰',title:'Набор наёмника',items:['100 орэнов','Подробная карта','Рекомендательное письмо']},
+    ],
+    prompt:`Ты — рассказчик в мире Ведьмака Анджея Сапковского. Пиши в духе тёмного реалистичного фэнтези — мир жестокий, моральные выборы неоднозначны, монстры иногда лучше людей.\nМИР: Материк разорён войнами. Нелюди угнетены. Ведьмаки — мутанты-охотники. Каждая деревня хранит тёмный секрет.`,
+  },
+  {
+    id:'starwars', theme:'starwars', icon:'⭐', name:'Звёздные Войны', desc:'Далёкая-далёкая галактика',
+    titleText:'⭐ Далёкая Галактика', subtitleText:'Звёздные Войны · Далеко-далеко отсюда',
+    thinkingText:'Сила направляет',
+    chars:[
+      {icon:'⚡',name:'Джедай',desc:'Хранитель мира, владеющий Силой и световым мечом'},
+      {icon:'🚀',name:'Контрабандист',desc:'Пилот быстрого корабля, работающий по обе стороны закона'},
+      {icon:'🤖',name:'Охотник за головами',desc:'Холодный профессионал — мандалорец или наёмник'},
+      {icon:'🔴',name:'Тёмная сторона',desc:'Ситх или падший джедай с властью и гневом'},
+    ],
+    backstories:[
+      {icon:'🌅',title:'Пустыня',text:'Ты вырос на забытой планете и мечтал о звёздах. Сегодня — первый шаг'},
+      {icon:'💥',title:'Выживший',text:'Империя уничтожила всё что ты любил. Ты один выжил'},
+      {icon:'📡',title:'Миссия',text:'Повстанцы доверили тебе секретные данные. Их нужно доставить'},
+      {icon:'🔮',title:'Зов Силы',text:'Ты почувствовал нечто необъяснимое. Старый мастер говорит — это Сила'},
+    ],
+    kits:[
+      {icon:'⚡',title:'Набор джедая',items:['Световой меч (синий)','Голокрон с учениями','Связь с Силой']},
+      {icon:'🚀',title:'Набор пилота',items:['Ключи от корабля','Бластер DL-44','Координаты базы повстанцев']},
+      {icon:'💎',title:'Набор контрабандиста',items:['500 кредитов','Фальшивые документы','Должок от Джаббы (плохое)']},
+    ],
+    prompt:`Ты — рассказчик в далёкой-далёкой галактике Звёздных Войн. Пиши с духом космической оперы — масштабные события, яркие персонажи, противостояние Света и Тьмы.\nМИР: Галактическая Империя или Новая Республика. Джедаи хранят мир. Ситхи жаждут власти. Корабли прыгают через гиперпространство.`,
+  },
+  {
+    id:'lego', theme:'lego', icon:'🧱', name:'LEGO', desc:'Всё — это игрушки. Всё — возможно!',
+    titleText:'🧱 Мир LEGO', subtitleText:'Всё что тебе нужно — правильные блоки',
+    thinkingText:'Мастер-строитель думает',
+    chars:[
+      {icon:'🦸',name:'Мастер-строитель',desc:'Видит потенциал в каждой детальке. Строит невозможное'},
+      {icon:'🧙',name:'Волшебник',desc:'Магия работает через правильно сложенные блоки'},
+      {icon:'🤖',name:'Робот',desc:'Из пластика и металла, но с настоящим сердцем'},
+      {icon:'🐱',name:'Кот-ниндзя',desc:'Быстрый, ловкий и очень, очень милый'},
+    ],
+    backstories:[
+      {icon:'🌈',title:'Особенный',text:'Пророчество гласит — ты особенный! Осталось выяснить в чём именно'},
+      {icon:'🏗️',title:'Строитель',text:'Твой шедевр уничтожен злодеем. Пора его остановить'},
+      {icon:'🎲',title:'Случайность',text:'Ты просто хотел дойти до магазина. Но всё пошло не так'},
+      {icon:'🦹',title:'Герой поневоле',text:'Никто другой не смог. Кроме тебя'},
+    ],
+    kits:[
+      {icon:'🔨',title:'Набор строителя',items:['Молоток','10 красных блоков','Инструкция по постройке']},
+      {icon:'✨',title:'Магический набор',items:['Волшебная палочка из блоков','Синяя шляпа','Зелье-кубик']},
+      {icon:'🎒',title:'Набор авантюриста',items:['Верёвка','Фонарик','Карта из блоков']},
+    ],
+    prompt:`Ты — весёлый рассказчик в мире LEGO где всё сделано из цветных блоков. Пиши радостно, с юмором, с абсурдными ситуациями и неожиданными решениями.\nМИР: Всё вокруг из пластиковых деталей. Персонажи кликают при ходьбе. Проблемы решаются постройкой. Злодеи смешные. Дружба важнее всего.`,
+  },
+  {
+    id:'alice', theme:'alice', icon:'🐇', name:'Страна Чудес', desc:'Алиса в Стране Чудес',
+    titleText:'🐇 Страна Чудес', subtitleText:'Льюис Кэрролл · Абсурд и волшебство',
+    thinkingText:'Чеширский кот улыбается',
+    chars:[
+      {icon:'👧',name:'Любопытный ребёнок',desc:'Всё интересно, всё надо попробовать — даже если не стоит'},
+      {icon:'🃏',name:'Джокер',desc:'Хаос — это план. Непредсказуемость — сила'},
+      {icon:'🎩',name:'Безумный шляпник',desc:'Мудр по-своему. Говорит загадками. Чай всегда горячий'},
+      {icon:'🐱',name:'Чеширский кот',desc:'Появляется и исчезает. Знает больше, чем говорит'},
+    ],
+    backstories:[
+      {icon:'🕳️',title:'Нора',text:'Ты упал в кроличью нору. Теперь надо найти выход — если он вообще есть'},
+      {icon:'🍄',title:'Съел не то',text:'После странного угощения мир стал другим. Или ты стал другим?'},
+      {icon:'🃏',title:'Приговор',text:'Королева Червей объявила тебя виновным. Суд завтра. Или уже был?'},
+      {icon:'🔑',title:'Ключ',text:'В руках золотой ключик. Ни одна дверь не подходит. Пока.'},
+    ],
+    kits:[
+      {icon:'🍰',title:'Съедобный набор',items:['Пирожок "Съешь меня"','Бутылочка "Выпей меня"','Чашка чая Шляпника']},
+      {icon:'🃏',title:'Набор карточного солдата',items:['Колода карт','Малярная кисть (красить розы)','Приказ Королевы']},
+      {icon:'🐇',title:'Набор кролика',items:['Часы (всегда спешат)','Белые перчатки','Список дел (бессмысленных)']},
+    ],
+    prompt:`Ты — рассказчик в Стране Чудес Льюиса Кэрролла. Пиши сюрреалистично, абсурдно, но с внутренней логикой безумия.\nМИР: Логика работает наоборот. Размеры меняются. Все немного сумасшедшие. Время сломано. Королева Червей казнит всех. Кот исчезает оставляя только улыбку.`,
+  },
+  {
+    id:'stardew', theme:'stardew', icon:'🌱', name:'Stardew Valley', desc:'Уютная ферма, тайны и дружба',
+    titleText:'🌱 Долина Звёздной Росы', subtitleText:'Stardew Valley · Уютное приключение',
+    thinkingText:'Гранпа советует',
+    chars:[
+      {icon:'🌾',name:'Фермер',desc:'Унаследовал дедушкину ферму. Руки в земле, душа нараспашку'},
+      {icon:'⛏️',name:'Шахтёр',desc:'Глубины горы зовут. Там древние тайны и редкие руды'},
+      {icon:'🍳',name:'Повар',desc:'Еда объединяет людей. Твои блюда открывают любые двери'},
+      {icon:'🎣',name:'Рыбак',desc:'Терпение и наблюдательность — твои главные таланты'},
+    ],
+    backstories:[
+      {icon:'📜',title:'Наследство',text:'Дедушка оставил тебе ферму и письмо: "Когда устанешь от суеты — открой"'},
+      {icon:'💼',title:'Выгорание',text:'Ты бросил офис в городе. Теперь чистый воздух, земля и новая жизнь'},
+      {icon:'🔮',title:'Тайна',text:'В деревне происходит что-то странное. Жители молчат. Ты должен узнать'},
+      {icon:'💕',title:'Свежий старт',text:'Новое место — новые люди — новый ты. Может здесь найдёшь что искал'},
+    ],
+    kits:[
+      {icon:'🌱',title:'Набор фермера',items:['Лейка','5 семян репы','Старый рюкзак']},
+      {icon:'⛏️',title:'Набор шахтёра',items:['Кирка','Факел x5','Зелье энергии']},
+      {icon:'🎁',title:'Дедушкин сундук',items:['Письмо с подсказкой','Загадочное семя','500 монет']},
+    ],
+    prompt:`Ты — рассказчик в мире Stardew Valley. Пиши тепло, уютно, с юмором и добротой. Важны отношения, природа и маленькие радости. Но под поверхностью скрываются тайны.\nМИР: Деревня Пеликан Таун. Река, шахта, ферма. Жители со своими секретами. Сезоны меняются. Мэр что-то скрывает. В шахте монстры.`,
+  },
+];
+
+// ══ СОСТОЯНИЕ ══
+const sel = { world: null, char: null, backstory: null, diff: 'normal', kit: null };
+let playerName = 'Странник';
+let playerUid  = null;
+let lastSave   = null;
+
+// ══ AUTH ══
+onAuthStateChanged(auth, async user => {
+  const loading = document.getElementById('auth-loading');
+  if (!user) { window.location.href = 'index.html'; return; }
+
+  playerUid  = user.uid;
+  playerName = user.displayName || (user.isAnonymous ? 'Безымянный странник' : user.email?.split('@')[0] || 'Странник');
+
+  document.getElementById('user-name-label').innerHTML = `Сера <span>${playerName}</span>`;
+  lastSave = await loadLastSave(user.uid);
+  renderHomePage();
+
+  loading.classList.add('hidden');
+  setTimeout(() => loading.remove(), 500);
+});
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await signOut(auth); window.location.href = 'index.html';
+});
+
+async function loadLastSave(uid) {
+  try {
+    const q = query(collection(db,'players',uid,'games'), orderBy('savedAt','desc'), limit(1));
+    const snap = await getDocs(q);
+    if (!snap.empty) return snap.docs[0].data();
+  } catch(e) {}
+  return null;
+}
+
+// ══ ГЛАВНАЯ СТРАНИЦА ══
+function renderHomePage() {
+  const btns = document.getElementById('home-btns');
+  document.getElementById('home-sub').textContent = `Добро пожаловать, ${playerName}`;
+
+  if (lastSave?.history?.length > 0) {
+    const savedAt = lastSave.savedAt?.toDate?.();
+    const dateStr = savedAt
+      ? savedAt.toLocaleDateString('ru', {day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})
+      : '';
+    btns.innerHTML = `
+      <button class="btn-main" onclick="continueSave()">📜 Продолжить странствие</button>
+      ${dateStr ? `<div class="save-hint">Сохранено: ${dateStr}</div>` : ''}
+      <div class="divider-line">или</div>
+      <button class="btn-secondary-home" onclick="showPage('page-worlds')">⚔ Новое приключение</button>`;
+  } else {
+    btns.innerHTML = `<button class="btn-main" onclick="showPage('page-worlds')">⚔ Начать приключение</button>`;
+  }
+}
+
+function continueSave() {
+  // Передаём данные сохранения в game.html через sessionStorage
+  sessionStorage.setItem('dnd_continue', JSON.stringify({
+    gameId:        lastSave.gameId,
+    history:       lastSave.history,
+    worldTheme:    lastSave.worldTheme    || null,
+    worldTitle:    lastSave.worldTitle    || null,
+    worldSubtitle: lastSave.worldSubtitle || null,
+    thinkingText:  lastSave.thinkingText  || null,
+  }));
+  window.location.href = 'game.html';
+}
+
+// ══ НАВИГАЦИЯ ══
+window.showPage = function(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  window.scrollTo(0, 0);
+};
+
+// ══ ШАГ 1: ВЫБОР МИРА ══
+function renderWorldsGrid() {
+  const grid = document.getElementById('worlds-grid');
+  grid.innerHTML = WORLDS.map(w => `
+    <div class="world-card ${sel.world?.id === w.id ? 'selected' : ''}"
+         style="--world-color:${w.color || 'var(--accent)'}"
+         onmouseenter="previewTheme('${w.theme}')"
+         onmouseleave="previewTheme(sel.world?.theme || null)"
+         onclick="selectWorld('${w.id}')">
+      <div class="world-icon">${w.icon}</div>
+      <div class="world-name">${w.name}</div>
+      <div class="world-desc">${w.desc}</div>
+    </div>`).join('');
+}
+renderWorldsGrid();
+
+window.previewTheme = function(themeId) {
+  applyTheme(themeId);
+};
+
+window.selectWorld = function(id) {
+  sel.world = WORLDS.find(w => w.id === id);
+  sel.char = null; sel.backstory = null; sel.kit = null;
+  renderWorldsGrid();
+  document.getElementById('btn-world-next').disabled = false;
+  applyTheme(sel.world.theme);
+  updateTopTitle(sel.world);
+};
+
+// ══ ШАГ 2: ПЕРСОНАЖ ══
+const origShowPage = window.showPage;
+window.showPage = function(pageId) {
+  if (pageId === 'page-char' && sel.world) {
+    document.getElementById('char-page-title').textContent = `Кто ты в мире «${sel.world.name}»?`;
+    renderCharsGrid();
+  }
+  if (pageId === 'page-backstory' && sel.world) renderBackstoriesList();
+  if (pageId === 'page-kit' && sel.world) renderKitsList();
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  window.scrollTo(0, 0);
+};
+
+function renderCharsGrid() {
+  const grid = document.getElementById('chars-grid');
+  grid.innerHTML = sel.world.chars.map((c,i) => `
+    <div class="char-card ${sel.char === i ? 'selected' : ''}" onclick="selectChar(${i})">
+      <div class="char-icon">${c.icon}</div>
+      <div class="char-name">${c.name}</div>
+      <div class="char-desc">${c.desc}</div>
+    </div>`).join('');
+  document.getElementById('btn-char-next').disabled = sel.char === null;
+}
+
+window.selectChar = function(i) {
+  sel.char = i;
+  renderCharsGrid();
+  document.getElementById('btn-char-next').disabled = false;
+};
+
+// ══ ШАГ 3: ПРЕДЫСТОРИЯ ══
+function renderBackstoriesList() {
+  const list = document.getElementById('backstories-list');
+  list.innerHTML = sel.world.backstories.map((b,i) => `
+    <div class="backstory-card ${sel.backstory === i ? 'selected' : ''}" onclick="selectBackstory(${i})">
+      <div class="backstory-icon">${b.icon}</div>
+      <div>
+        <div class="backstory-title">${b.title}</div>
+        <div class="backstory-text">${b.text}</div>
+      </div>
+    </div>`).join('');
+  checkBackstoryStep();
+}
+
+window.selectBackstory = function(i) {
+  sel.backstory = i;
+  renderBackstoriesList();
+  checkBackstoryStep();
+};
+
+window.checkBackstoryStep = function() {
+  const name = document.getElementById('hero-name').value.trim();
+  document.getElementById('btn-backstory-next').disabled = !name || sel.backstory === null;
+};
+
+// ══ ШАГ 4: СЛОЖНОСТЬ ══
+window.selectDiff = function(level) {
+  sel.diff = level;
+  ['easy','normal','hard'].forEach(l => {
+    document.getElementById('diff-'+l).classList.toggle('selected', l === level);
+  });
+  document.getElementById('btn-diff-next').disabled = false;
+};
+
+// ══ ШАГ 5: ИНВЕНТАРЬ ══
+function renderKitsList() {
+  const list = document.getElementById('kits-list');
+  list.innerHTML = sel.world.kits.map((k,i) => `
+    <div class="backstory-card ${sel.kit === i ? 'selected' : ''}" onclick="selectKit(${i})">
+      <div class="backstory-icon">${k.icon}</div>
+      <div>
+        <div class="backstory-title">${k.title}</div>
+        <div class="backstory-text">${k.items.join(' · ')}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('btn-kit-next').disabled = sel.kit === null;
+}
+
+window.selectKit = function(i) {
+  sel.kit = i;
+  renderKitsList();
+  document.getElementById('btn-kit-next').disabled = false;
+};
+
+// ══ ЗАПУСК ИГРЫ ══
+window.launchGame = function() {
+  const world     = sel.world;
+  const charData  = world.chars[sel.char];
+  const backstory = world.backstories[sel.backstory];
+  const kit       = world.kits[sel.kit];
+  const heroName  = document.getElementById('hero-name').value.trim();
+
+  const diffText = {
+    easy:   'Сказочное приключение — мир добрее, смерть персонажа невозможна',
+    normal: 'Обычный герой — классический баланс риска и награды',
+    hard:   'Тёмная история — мир безжалостен, смерть возможна',
+  }[sel.diff];
+
+  const startMsg = `Начни новое приключение.
+Мир: ${world.name}.
+Моё имя: ${heroName}.
+Кто я: ${charData.name} — ${charData.desc}.
+Предыстория: ${backstory.title} — ${backstory.text}.
+Стартовый инвентарь: ${kit.title} — ${kit.items.join(', ')}.
+Сложность: ${diffText}.
+Начни с яркого вступления: опиши место, дай почувствовать атмосферу через детали, запахи, звуки. Упомяни инвентарь естественно. Обратись ко мне по имени. Затем дай первый выбор.`;
+
+  // Передаём всё через sessionStorage
+  sessionStorage.setItem('dnd_newgame', JSON.stringify({
+    startMsg,
+    worldTheme:    world.theme,
+    worldTitle:    world.titleText,
+    worldSubtitle: world.subtitleText,
+    thinkingText:  world.thinkingText,
+    worldPrompt:   world.prompt,
+    playerName:    heroName,
+    playerUid,
+  }));
+
+  window.location.href = 'game.html';
+};
+
+// ══ ТЕМА ══
+function applyTheme(themeId) {
+  document.body.className = document.body.className.replace(/theme-\S+/g,'').trim();
+  if (themeId) document.body.classList.add('theme-' + themeId);
+}
+
+function updateTopTitle(world) {
+  if (!world) return;
+  document.getElementById('top-title').textContent = world.titleText;
+  document.getElementById('home-title').textContent = world.titleText;
+  document.getElementById('home-emblem').textContent = world.icon;
+}
+</script>
+</body>
+</html>
