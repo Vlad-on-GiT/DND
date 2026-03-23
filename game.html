@@ -38,10 +38,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .bar-btn:hover{border-color:var(--accent);color:var(--text);opacity:1;}
 
 /* ── ТРЁХКОЛОНОЧНЫЙ LAYOUT ── */
-.game-layout{position:relative;z-index:1;width:100%;max-width:1400px;display:grid;grid-template-columns:260px 1fr 260px;gap:16px;padding:12px 16px 28px;}.game-layout-wrap{width:100%;display:flex;justify-content:center;}
+.game-layout{position:relative;z-index:1;width:100%;max-width:1400px;display:grid;grid-template-columns:260px 1fr 260px;gap:16px;padding:12px 16px 28px;}.body-wrap{padding-top:48px;width:100%;display:flex;justify-content:center;}.game-layout-wrap{width:100%;display:flex;justify-content:center;}
 
 /* ── БОКОВЫЕ ПАНЕЛИ ── */
-.side-panel{display:flex;flex-direction:column;gap:10px;align-self:start;position:sticky;top:16px;}
+.side-panel{display:flex;flex-direction:column;gap:10px;align-self:start;position:sticky;top:60px;max-height:calc(100vh - 68px);overflow-y:auto;overflow-x:visible;}
+.side-panel::-webkit-scrollbar{width:2px;}
+.side-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 .panel-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:visible;}
 .panel-header{padding:10px 14px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
 .panel-header-icon{font-size:14px;}
@@ -176,7 +178,7 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
   </div>
 </div>
 
-<div class="game-layout" style="margin-top:48px;">
+<div class="body-wrap"><div class="game-layout" style="padding-top:0;">
 
   <!-- ══ ЛЕВАЯ ПАНЕЛЬ: ПЕРСОНАЖ ══ -->
   <div class="side-panel" id="left-panel">
@@ -353,8 +355,62 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
 <div id="global-item-tooltip" style="position:fixed;z-index:9999;display:none;background:var(--bg-mid);border:1px solid var(--accent);border-radius:8px;padding:8px 12px;min-width:140px;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.7);">
   <div id="git-name" style="font-family:var(--font-title);font-size:12px;color:var(--accent-glow);margin-bottom:3px;"></div>
   <div id="git-desc" style="font-size:11px;color:var(--text-dim);line-height:1.5;"></div>
-</div>
+</div></div>
 
+<script>
+// ══ ТУЛТИПЫ — глобальные функции вне ES-модуля ══
+function _ttPos(tt, el) {
+  tt.style.visibility = 'hidden';
+  tt.style.display = 'block';
+  var r  = el.getBoundingClientRect();
+  var tw = tt.offsetWidth  || 150;
+  var th = tt.offsetHeight || 60;
+  var left = r.left + r.width / 2 - tw / 2;
+  var top  = r.top - th - 10;
+  left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+  if (top < 8) top = r.bottom + 6;
+  tt.style.left = left + 'px';
+  tt.style.top  = top  + 'px';
+  tt.style.visibility = 'visible';
+}
+function showGlobalTooltip(el, name, stat) {
+  if (!name || name === 'Пусто') return;
+  var tt = document.getElementById('global-tooltip');
+  if (!tt) return;
+  document.getElementById('gt-name').textContent = name;
+  document.getElementById('gt-stat').textContent = stat || '';
+  _ttPos(tt, el);
+  tt.classList.add('visible');
+}
+function hideGlobalTooltip() {
+  var tt = document.getElementById('global-tooltip');
+  if (tt) { tt.classList.remove('visible'); tt.style.display = 'none'; }
+}
+function showItemTooltip(el, name, desc) {
+  if (!name) return;
+  var tt = document.getElementById('global-item-tooltip');
+  if (!tt) return;
+  document.getElementById('git-name').textContent = name;
+  document.getElementById('git-desc').textContent = desc || '';
+  _ttPos(tt, el);
+  tt.classList.add('visible');
+}
+function hideItemTooltip() {
+  var tt = document.getElementById('global-item-tooltip');
+  if (tt) { tt.classList.remove('visible'); tt.style.display = 'none'; }
+}
+document.addEventListener('mouseover', function(e) {
+  var slot = e.target.closest('[data-has-tip]');
+  if (slot) showGlobalTooltip(slot, slot.dataset.tipName, slot.dataset.tipStat);
+  var cell = e.target.closest('[data-item-name]');
+  if (cell) showItemTooltip(cell, cell.dataset.itemName, cell.dataset.itemDesc);
+});
+document.addEventListener('mouseout', function(e) {
+  var rt = e.relatedTarget;
+  if (!rt || !rt.closest('[data-has-tip]'))  hideGlobalTooltip();
+  if (!rt || !rt.closest('[data-item-name]')) hideItemTooltip();
+});
+</script>
 <script type="module">
 import { initializeApp }     from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
@@ -794,71 +850,15 @@ function restoreHistory(history){
 
 document.getElementById('btn-logout').addEventListener('click',async()=>{ await signOut(auth); window.location.href='index.html'; });
 
-// Тултипы объявлены в HTML напрямую
 
-// Делегированные события для тултипов слотов
-document.addEventListener('mouseover', function(e) {
-  const slot = e.target.closest('[data-has-tip]');
-  if (slot) {
-    const name = slot.dataset.tipName || '';
-    const stat = slot.dataset.tipStat || '';
-    if (name && name !== 'Пусто') showGlobalTooltip(slot, name, stat);
-  }
-  const cell = e.target.closest('[data-item-name]');
-  if (cell) {
-    const name = cell.dataset.itemName || '';
-    const desc = cell.dataset.itemDesc || '';
-    if (name) showItemTooltip(cell, name, desc);
-  }
-});
+
+
 document.addEventListener('mouseout', function(e) {
   if (e.target.closest('[data-has-tip]'))  hideGlobalTooltip();
   if (e.target.closest('[data-item-name]')) hideItemTooltip();
 });
 
-function positionTooltip(tt, el) {
-  // Показываем скрыто чтобы измерить размер
-  tt.style.visibility = 'hidden';
-  tt.style.display = 'block';
-  const r   = el.getBoundingClientRect();
-  const tw  = tt.offsetWidth  || 140;
-  const th  = tt.offsetHeight || 60;
-  let left  = r.left + r.width / 2 - tw / 2;
-  let top   = r.top - th - 10;
-  // Не выходим за края экрана
-  left = Math.max(8, Math.min(left, window.innerWidth  - tw - 8));
-  top  = top < 8 ? r.bottom + 6 : top; // если нет места сверху — снизу
-  tt.style.left = left + 'px';
-  tt.style.top  = top  + 'px';
-  tt.style.visibility = 'visible';
-}
 
-function showGlobalTooltip(el, name, stat) {
-  if (!name || name === 'Пусто') return; // не показывать пустые
-  const tt = document.getElementById('global-tooltip');
-  document.getElementById('gt-name').textContent = name;
-  document.getElementById('gt-stat').textContent = stat || '';
-  positionTooltip(tt, el);
-  tt.classList.add('visible');
-}
-function hideGlobalTooltip() {
-  const tt = document.getElementById('global-tooltip');
-  tt.classList.remove('visible');
-  tt.style.display = 'none';
-}
-function showItemTooltip(el, name, desc) {
-  if (!name) return;
-  const tt = document.getElementById('global-item-tooltip');
-  document.getElementById('git-name').textContent = name;
-  document.getElementById('git-desc').textContent = desc || '';
-  positionTooltip(tt, el);
-  tt.classList.add('visible');
-}
-function hideItemTooltip() {
-  const tt = document.getElementById('global-item-tooltip');
-  tt.classList.remove('visible');
-  tt.style.display = 'none';
-}
 window.goToMenu=()=>{ window.location.href='menu.html'; };
 
 // ══ ПИКСЕЛЬ-АРТ ══
