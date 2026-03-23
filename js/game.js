@@ -1,0 +1,801 @@
+// ╔══════════════════════════════════════════════════════╗
+// ║  ВРАТА МИРОВ — game.js                              ║
+// ║  Структура:                                          ║
+// ║  1. Firebase (init, auth, db)                        ║
+// ║  2. State (charState, state)                         ║
+// ║  3. Auth (onAuthStateChanged, setupWorld)            ║
+// ║  4. Storage (localStorage, Firestore save/load)      ║
+// ║  5. Panels (renderAllPanels, stats, skills, equip)   ║
+// ║  6. Pixel Art (portraits, doll)                      ║
+// ║  7. Prompts (buildSystemPrompt)                      ║
+// ║  8. Engine (askDM, renderActions, scroll)            ║
+// ╚══════════════════════════════════════════════════════╝
+
+// ════════════════════════════════════════════
+// 1. FIREBASE
+// ════════════════════════════════════════════
+import { initializeApp }     from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import firebaseConfig from "./firebase-config.js";
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+
+// ════════════════════════════════════════════
+// 2. STATE — состояние персонажа и игры
+// ════════════════════════════════════════════
+// ══ СОСТОЯНИЕ ПЕРСОНАЖА ══
+const charState = {
+  hp:{ cur:100, max:100 }, mp:{ cur:50, max:50 }, xp:{ cur:0, max:100 },
+  stats:{ Сила:10, Ловкость:10, Интеллект:10, Харизма:10 },
+  skills:[
+    {name:'Красноречие',level:1},{name:'Скрытность',level:1},
+    {name:'Атака',level:1},{name:'Магия',level:1},{name:'Торговля',level:1},
+  ],
+  equipment:{ helmet:null, armor:null, weapon:null, gloves:null, ring:null, ring2:null, boots:null },
+  inventory:[], gold:0,
+};
+
+// ══ ИГРОВОЕ СОСТОЯНИЕ ══
+const state = {
+  history:[], diceNotation:null, diceReason:null,
+  waitingForDice:false, currentActions:[], locked:false,
+  uid:null, gameId:'session_'+Date.now(),
+  worldPrompt:null, thinkingText:'Рассказчик думает',
+  nakazText:'',
+};
+
+// ══ AUTH ══
+onAuthStateChanged(auth, user => {
+  const loading = document.getElementById('auth-loading');
+  if (!user){ window.location.href='index.html'; return; }
+  state.uid = user.uid;
+  const name = user.displayName||(user.isAnonymous?'Гость':user.email?.split('@')[0]||'Странник');
+  document.getElementById('player-name-label').innerHTML = `<span>${name}</span>`;
+  document.getElementById('player-bar').classList.add('visible');
+  loadNakazy();
+
+  const newGameData  = sessionStorage.getItem('dnd_newgame');
+  const continueData = sessionStorage.getItem('dnd_continue');
+
+  // Скрываем загрузку сразу — не ждём askDM
+  loading.classList.add('hidden');
+  setTimeout(()=>loading.remove(), 500);
+
+  if (newGameData){
+    sessionStorage.removeItem('dnd_newgame');
+    try {
+      const d = JSON.parse(newGameData);
+      setupWorld(d);
+      // Пробуем загрузить сохранённый стейт (если уже играли эту сессию)
+      if (!loadCharState()) initCharForWorld(d);
+      renderAllPanels();
+      askDM(d.startMsg);
+    } catch(e) {
+      console.error('newgame parse error:', e);
+      window.location.href='menu.html';
+    }
+  } else if (continueData){
+    sessionStorage.removeItem('dnd_continue');
+    try {
+      const d = JSON.parse(continueData);
+      setupWorld(d);
+      state.history = d.history||[];
+      state.gameId  = d.gameId||state.gameId;
+      // Сначала Firestore, потом localStorage как более свежий
+      if (d.charState) Object.assign(charState, d.charState);
+      loadCharState(); // перезаписывает если есть более свежее в localStorage
+      renderAllPanels();
+      restoreHistory(state.history);
+    } catch(e) {
+      console.error('continue parse error:', e);
+      window.location.href='menu.html';
+    }
+  } else {
+    window.location.href='menu.html'; return;
+  }
+});
+
+function initCharForWorld(d) {
+
+// ════════════════════════════════════════════
+// 3. STORAGE — сохранение и загрузка
+// ════════════════════════════════════════════
+function saveCharState(){
+  try {
+    const key = 'dnd_char_' + (state.uid||'guest') + '_' + (state.gameId||'');
+    localStorage.setItem(key, JSON.stringify({ charState, playerLevel }));
+  } catch(e){ console.warn('saveCharState:', e); }
+}
+
+function loadCharState(){
+  try {
+    const key = 'dnd_char_' + (state.uid||'guest') + '_' + (state.gameId||'');
+    const saved = localStorage.getItem(key);
+    if (!saved) return false;
+    const d = JSON.parse(saved);
+    if (d.charState)    Object.assign(charState, d.charState);
+    if (d.playerLevel)  playerLevel = d.playerLevel;
+    return true;
+  } catch(e){ return false; }
+}
+
+// ════════════════════════════════════════════
+// 4. AUTH — авторизация и настройка мира
+// ════════════════════════════════════════════
+  // Начальный стартовый набор из инвентаря
+  if (d.startKit) {
+    charState.gold = d.startKit.gold||0;
+    charState.inventory = (d.startKit.items||[]).map(name=>({name,icon:'📦',qty:1,desc:''}));
+  }
+  // Подбираем статы под мир
+  const worldId = d.worldTheme||'';
+  const statSets = {
+    morrowind:{Сила:10,Ловкость:12,Интеллект:10,Удача:8},
+    lotr:{Сила:12,Выносливость:10,Мудрость:10,Воля:8},
+    hp:{Интеллект:14,Смелость:10,Хитрость:8,Удача:10},
+    witcher:{Сила:12,Ловкость:12,Знания:10,Знаки:8},
+    starwars:{Сила:10,Ловкость:12,Интеллект:10,Сила_духа:10},
+    lego:{Творчество:14,Ловкость:10,Сила:8,Удача:10},
+    alice:{Безумие:12,Любопытство:14,Логика:6,Везение:10},
+    stardew:{Земледелие:10,Горное_дело:8,Рыбалка:8,Дружба:12},
+  };
+  if (statSets[worldId]) charState.stats = statSets[worldId];
+  const skillSets = {
+    morrowind:[{name:'Длинные клинки',level:1},{name:'Скрытность',level:1},{name:'Красноречие',level:1},{name:'Алхимия',level:1},{name:'Торговля',level:1}],
+    lotr:[{name:'Владение мечом',level:1},{name:'Стрельба',level:1},{name:'Следопыт',level:1},{name:'Магия',level:1},{name:'Дипломатия',level:1}],
+    hp:[{name:'Заклинания',level:1},{name:'Зелья',level:1},{name:'Трансфигурация',level:1},{name:'Полёт',level:1},{name:'Защита',level:1}],
+    witcher:[{name:'Мечи',level:1},{name:'Знаки',level:1},{name:'Алхимия',level:1},{name:'Слежка',level:1},{name:'Беглость',level:1}],
+    starwars:[{name:'Сила',level:1},{name:'Пилотаж',level:1},{name:'Стрельба',level:1},{name:'Техника',level:1},{name:'Хитрость',level:1}],
+    lego:[{name:'Строительство',level:1},{name:'Ловкость',level:1},{name:'Изобретения',level:1},{name:'Командование',level:1},{name:'Удача',level:1}],
+    alice:[{name:'Абсурд',level:1},{name:'Бег',level:1},{name:'Чаепитие',level:1},{name:'Загадки',level:1},{name:'Уменьшение',level:1}],
+    stardew:[{name:'Земледелие',level:1},{name:'Горное дело',level:1},{name:'Рыбалка',level:1},{name:'Кулинария',level:1},{name:'Дружба',level:1}],
+  };
+  if (skillSets[worldId]) charState.skills = skillSets[worldId];
+}
+
+function setupWorld(d){
+  if (d.worldTheme) document.body.classList.add('theme-'+d.worldTheme);
+  document.getElementById('game-title').textContent    = d.worldTitle    ||'Врата Миров';
+  document.getElementById('game-subtitle').textContent = d.worldSubtitle ||'Твоё приключение';
+  const barTitle = document.getElementById('bar-title');
+  if (barTitle) { barTitle.textContent = d.worldTitle||'Врата Миров'; barTitle.style.display='block'; }
+  const barSub = document.getElementById('bar-subtitle');
+  if (barSub) { barSub.textContent = d.worldSubtitle||''; barSub.style.display='block'; }
+  document.getElementById('char-panel-title').textContent = d.playerName||'Персонаж';
+  if (d.playerName) document.getElementById('portrait-name').textContent = d.playerName;
+  if (d.charClass)  document.getElementById('portrait-class').textContent = d.charClass;
+  if (d.thinkingText){
+    state.thinkingText=d.thinkingText;
+    document.getElementById('typing').innerHTML=`${d.thinkingText}<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>`;
+  }
+  if (d.worldPrompt) state.worldPrompt=d.worldPrompt;
+  setTimeout(updatePixelArt, 100);
+}
+
+// ══ РЕНДЕР ПАНЕЛЕЙ ══
+// ── НАКАЗЫ — отдельное хранилище per user ──
+function saveNakazy(){
+  const text = document.getElementById('nakaz-text').value.trim();
+  state.nakazText = text;
+  try {
+    localStorage.setItem('dnd_nakazy_'+(state.uid||'guest'), text);
+  } catch(e){}
+  const hint = document.getElementById('nakaz-saved');
+  hint.classList.add('show');
+  setTimeout(()=>hint.classList.remove('show'), 2500);
+}
+function loadNakazy(){
+  try {
+    const saved = localStorage.getItem('dnd_nakazy_'+(state.uid||'guest'));
+    if (saved !== null) {
+      state.nakazText = saved;
+      const ta = document.getElementById('nakaz-text');
+      if (ta) ta.value = saved;
+    }
+  } catch(e){}
+}
+function openNakazy(){
+  loadNakazy();
+  document.getElementById('nakazы-modal').classList.add('open');
+}
+function closeNakazy(){
+  document.getElementById('nakazы-modal').classList.remove('open');
+}
+// Закрыть по клику на фон
+document.getElementById('nakazы-modal').addEventListener('click', function(e){
+  if (e.target === this) closeNakazy();
+});
+
+
+// ════════════════════════════════════════════
+// 5. PANELS — рендер боковых панелей
+// ════════════════════════════════════════════
+
+function renderAllPanels(){
+  renderBars(); renderStats(); renderSkills(); renderEquipment(); renderInventory();
+}
+
+function renderBars(){
+  const {hp,mp,xp}=charState;
+  document.getElementById('hp-val').textContent=`${hp.cur} / ${hp.max}`;
+  document.getElementById('mp-val').textContent=`${mp.cur} / ${mp.max}`;
+  document.getElementById('xp-val').textContent=`${xp.cur} / ${xp.max}`;
+  document.getElementById('hp-bar').style.width=`${Math.max(0,Math.min(100,(hp.cur/hp.max)*100))}%`;
+  document.getElementById('mp-bar').style.width=`${Math.max(0,Math.min(100,(mp.cur/mp.max)*100))}%`;
+  document.getElementById('xp-bar').style.width=`${Math.max(0,Math.min(100,(xp.cur/xp.max)*100))}%`;
+}
+
+function renderStats(){
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = Object.entries(charState.stats).map(([name,val])=>
+    `<div class="stat-item"><div class="stat-item-val">${val}</div><div class="stat-item-name">${name}</div></div>`
+  ).join('');
+}
+
+function renderSkills(){
+  const list = document.getElementById('skills-list');
+  list.innerHTML = charState.skills.map(s=>`
+    <div class="skill-row">
+      <span class="skill-name">${s.name}</span>
+      <div class="skill-dots">${[1,2,3,4,5].map(i=>`<div class="skill-dot ${i<=s.level?'filled':''}"></div>`).join('')}</div>
+    </div>`).join('');
+}
+
+function renderEquipment(){
+  const slots=['helmet','armor','weapon','gloves','ring','ring2','boots'];
+  slots.forEach(slot=>{
+    const item   = charState.equipment[slot];
+    const slotEl = document.getElementById('slot-'+slot);
+    if (!slotEl) return;
+    if (item){
+      slotEl.dataset.tipName = item.name||'Предмет';
+      slotEl.dataset.tipStat = item.stat||'';
+      slotEl.classList.add('equipped');
+      // Показываем иконку предмета поверх SVG если есть emoji
+      const inner = slotEl.querySelector('.equip-slot-inner');
+      if (inner && item.icon) {
+        let eIcon = inner.querySelector('.item-emoji-icon');
+        if (!eIcon) {
+          eIcon = document.createElement('div');
+          eIcon.className = 'item-emoji-icon';
+          eIcon.style.cssText = 'position:absolute;top:4px;right:4px;font-size:14px;line-height:1;';
+          inner.appendChild(eIcon);
+        }
+        eIcon.textContent = item.icon;
+      }
+    } else {
+      slotEl.dataset.tipName = 'Пусто';
+      slotEl.dataset.tipStat = '';
+      slotEl.classList.remove('equipped');
+      const inner = slotEl.querySelector('.equip-slot-inner');
+      if (inner) { const e = inner.querySelector('.item-emoji-icon'); if(e) e.remove(); }
+    }
+  });
+}
+
+function renderInventory(){
+  const grid = document.getElementById('inv-grid');
+  const cells = 12;
+  let html='';
+  for (let i=0;i<cells;i++){
+    const item = charState.inventory[i];
+    if (item){
+      html+=`<div class="inv-cell has-item" data-item-name="${(item.name||'').replace(/"/g,'&quot;')}" data-item-desc="${(item.desc||'').replace(/"/g,'&quot;')}">
+        ${item.icon||'📦'}
+        ${item.qty>1?`<span class="item-qty">${item.qty}</span>`:''}
+      </div>`;
+    } else {
+      html+=`<div class="inv-cell"></div>`;
+    }
+  }
+  grid.innerHTML=html;
+  document.getElementById('gold-val').textContent=charState.gold;
+}
+
+// ══ ОБНОВЛЕНИЕ СОСТОЯНИЯ ИЗ ОТВЕТА ИИ ══
+function applyCharUpdate(update){
+  if(!update) return;
+  let changed=false;
+
+  if(update.hp!==undefined){ charState.hp.cur=Math.max(0,Math.min(charState.hp.max,update.hp)); changed=true; }
+  if(update.hp_max!==undefined){ charState.hp.max=update.hp_max; changed=true; }
+  if(update.mp!==undefined){ charState.mp.cur=Math.max(0,Math.min(charState.mp.max,update.mp)); changed=true; }
+  if(update.mp_max!==undefined){ charState.mp.max=update.mp_max; changed=true; }
+  if(update.xp!==undefined){ charState.xp.cur=update.xp; if(charState.xp.cur>=charState.xp.max){charState.xp.cur=0;charState.xp.max=Math.round(charState.xp.max*1.5);levelUp();} changed=true; }
+  if(update.gold!==undefined){ charState.gold=update.gold; changed=true; }
+
+  if(update.stats){ Object.assign(charState.stats,update.stats); changed=true; }
+
+  if(update.skills){ update.skills.forEach(us=>{ const s=charState.skills.find(sk=>sk.name===us.name); if(s) s.level=Math.max(1,Math.min(5,us.level)); }); changed=true; }
+
+  if(update.equipment){ Object.entries(update.equipment).forEach(([slot,item])=>{ charState.equipment[slot]=item; }); changed=true; }
+
+  if(update.inventory_add){ update.inventory_add.forEach(item=>{ const ex=charState.inventory.find(i=>i.name===item.name); if(ex) ex.qty=(ex.qty||1)+(item.qty||1); else charState.inventory.push({...item,qty:item.qty||1}); }); changed=true; }
+
+  if(update.inventory_remove){ update.inventory_remove.forEach(name=>{ const idx=charState.inventory.findIndex(i=>i.name===name); if(idx>=0) charState.inventory.splice(idx,1); }); changed=true; }
+
+  if(changed){ renderAllPanels(); updatePixelArt(); saveCharState(); }
+}
+
+let playerLevel = 1;
+function levelUp(){
+  playerLevel++;
+  Object.keys(charState.stats).forEach(k=>{ charState.stats[k]+=1; });
+  charState.hp.max+=10; charState.hp.cur=charState.hp.max;
+  charState.mp.max+=5;  charState.mp.cur=charState.mp.max;
+  document.getElementById('portrait-level').textContent=`Ур. ${playerLevel}`;
+  addDMMessage(`✨ Уровень ${playerLevel}! Характеристики улучшены.`);
+  updatePixelArt();
+  saveCharState();
+}
+
+// ══ СОХРАНЕНИЕ ══
+async function saveProgress(){
+  if(!state.uid||state.history.length===0) return;
+  try {
+    const titleEl=document.getElementById('game-title');
+    await setDoc(doc(db,'players',state.uid,'games',state.gameId),{
+      gameId:        state.gameId,
+      title:         titleEl.textContent+' · '+new Date().toLocaleDateString('ru'),
+      history:       state.history,
+      charState:     charState,
+      worldTheme:    document.body.className.match(/theme-(\S+)/)?.[1]||null,
+      worldTitle:    titleEl.textContent,
+      worldSubtitle: document.getElementById('game-subtitle').textContent,
+      thinkingText:  state.thinkingText,
+      savedAt:       serverTimestamp(),
+    });
+    const el=document.getElementById('save-indicator');
+    el.classList.add('visible');
+    setTimeout(()=>el.classList.remove('visible'),2500);
+  } catch(e){ console.warn('Autosave:',e); }
+}
+
+// ══ СИСТЕМНЫЙ ПРОМПТ ══
+
+// ════════════════════════════════════════════
+// 6. PROMPTS — системные промпты для ИИ
+// ════════════════════════════════════════════
+function buildSystemPrompt(){
+  const base = state.worldPrompt || 'Ты — рассказчик, ведущий приключение.';
+  const hp=charState.hp, mp=charState.mp, xp=charState.xp;
+  const statsStr  = Object.entries(charState.stats).map(([k,v])=>k+':'+v).join(', ');
+  const skillsStr = charState.skills.map(s=>s.name+'(ур.'+s.level+')').join(', ');
+  const invStr    = charState.inventory.map(i=>i.name+'x'+(i.qty||1)).join(', ')||'пусто';
+  const equipStr  = Object.entries(charState.equipment).filter(([,v])=>v).map(([k,v])=>k+':'+v.name).join(', ')||'пусто';
+  const curXP = xp.cur, maxXP = xp.max;
+
+  const nakazBlock = state.nakazText
+    ? `\n\nПОЖЕЛАНИЯ ИГРОКА (учитывай в каждом ответе):\n${state.nakazText}`
+    : '';
+  return base + nakazBlock + `
+
+СОСТОЯНИЕ ПЕРСОНАЖА:
+HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${maxXP} | Золото: ${charState.gold}
+Характеристики: ${statsStr}
+Навыки: ${skillsStr}
+Инвентарь: ${invStr}
+Экипировка: ${equipStr}
+
+КАК ПИСАТЬ ТЕКСТ — читать должно быть интересно и легко:
+- Каждая мысль = отдельный абзац через \\n\\n. Макс 2-3 предложения в абзаце.
+- Диалоги отдельным абзацем с тире: — Стой! — рычит стражник. 😤 — Я просто путник, — говоришь ты.
+- 2-4 эмодзи в тексте строго по смыслу: ⚔️ бой 💀 опасность 💰 деньги 🔥 магия 😤 злость 😏 хитрость 🍺 таверна
+- От второго лица, сразу к делу, не пересказывай выбор игрока.
+- Текст живой и динамичный — не книжный, не сухой.
+
+МЕХАНИКА DnD — СТРОГО ОБЯЗАТЕЛЬНО:
+
+БРОСКИ КУБИКОВ — это сердце DnD, используй ПОСТОЯННО:
+- Любое рискованное действие ТРЕБУЕТ броска кубика ПЕРЕД тем как назвать результат
+- Атака, скрытность, убеждение, взлом, прыжок, магия — всё через бросок
+- Если игрок атакует/рискует: верни type=dice, не пиши чем кончилось — пусть бросит
+- После броска опиши результат: высокий (15+) = успех, средний (8-14) = частичный, низкий (1-7) = провал
+
+ОПЫТ — начисляй КАЖДЫЙ ход обязательно:
+- Победил врага: xp +20-50, выполнил задание: xp +30-100
+- Хорошая идея или ролевой момент: xp +5-15, нашёл что-то важное: xp +10-25
+- Просто прошёл сцену без риска: xp +3-8
+- xp в char_update = абсолютное значение (текущее значение + начисление)
+
+УРОН: удар врага hp -5 до -20. Лечение: hp восстанавливается. HP не ниже 1.
+ЗОЛОТО: зарабатывай и трать реалистично.
+ПРЕДМЕТЫ: добавляй в инвентарь когда игрок подбирает или покупает.
+
+ВАЖНО: НИКОГДА не пиши варианты действий внутри поля "story". "story" — только повествование. Варианты ТОЛЬКО в поле "actions".
+НИКОГДА не добавляй "У тебя есть выбор:" или список действий в текст story.
+
+ФОРМАТ — строго валидный JSON, ТОЛЬКО JSON без слов снаружи:
+
+Когда нужен бросок (рискованное действие):
+{"story":"текст\\n\\nтекст","type":"dice","dice":{"notation":"1d20","reason":"Проверка Ловкости"},"char_update":{"xp":${curXP+5}}}
+
+Когда выбор действия:
+{"story":"текст\\n\\nтекст","type":"choice","actions":["⚔️ Атаковать","💬 Поговорить","🏃 Сбежать"],"char_update":{"xp":${curXP+10},"hp":85,"gold":50}}
+
+Поля char_update (все необязательные, только что изменилось):
+hp, mp, xp, gold — абсолютные числа
+inventory_add: [{"name":"Меч","icon":"⚔️","qty":1,"desc":"Урон 1d6"}]
+inventory_remove: ["название"]
+equipment: {"weapon":{"name":"Меч","icon":"⚔️","stat":"Урон: 1d8"}} или {"weapon":null} чтобы снять
+stats: {"Сила":13}  skills: [{"name":"Атака","level":2}]`;
+}
+
+// ══ ДВИЖОК ══
+const log=document.getElementById('story-log');
+const actionZone=document.getElementById('action-zone');
+const typing=document.getElementById('typing');
+
+function scrollBottom(){
+  setTimeout(()=>{
+    const last = log.lastElementChild;
+    if (last) last.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }, 100);
+}
+function scrollToActions(){
+  setTimeout(()=>{
+    actionZone.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }, 150);
+}
+function showTyping(v){ typing.classList.toggle('visible',v); }
+
+function addDMMessage(rawText){
+  const html = rawText
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\r\n/g,'\n')
+    .replace(/\n{3,}/g,'\n\n')   // схлопываем 3+ переносов в 2
+    .replace(/\n\n/g,'</p><p>')  // двойной => новый абзац
+    .replace(/\n/g,'<br>');       // одинарный => br
+  const d=document.createElement('div');
+  d.className='message dm-block';
+  d.innerHTML='<div class="dm-text"><p>'+html+'</p></div>';
+  log.appendChild(d); scrollBottom();
+}
+
+function addPlayerMessage(text){
+  const d=document.createElement('div');
+  d.className='message player-block';
+  d.innerHTML=`<div class="player-text">↳ ${text}</div>`;
+  log.appendChild(d); scrollBottom();
+}
+function addDiceResult(notation,result,reason){
+  const d=document.createElement('div');
+  d.className='message dice-result';
+  d.innerHTML=`🎲 ${reason}<br><span class="roll-number">${result}</span><small style="opacity:0.6">${notation}</small>`;
+  log.appendChild(d); scrollBottom();
+}
+function setActionZone(html){ actionZone.innerHTML=html; if(html.trim()) scrollToActions(); }
+
+function rollDice(notation){
+  const m=notation.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  if(!m) return Math.floor(Math.random()*20)+1;
+  const n=+m[1],s=+m[2],mod=m[3]?+m[3]:0;
+  let t=0; for(let i=0;i<n;i++) t+=Math.floor(Math.random()*s)+1;
+  return t+mod;
+}
+
+
+// ════════════════════════════════════════════
+// 7. ENGINE — игровой движок
+// ════════════════════════════════════════════
+async function askDM(userMessage){
+  if(state.locked) return;
+  state.locked=true;
+  if(userMessage) state.history.push({role:'user',content:userMessage});
+  showTyping(true); setActionZone('');
+
+  try {
+    // ── ЗАПРОС 1: получаем структурированный JSON ──
+    const resp1 = await fetch('https://dnd-proxy.vercel.app/api/proxy',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:1200,
+        system:buildSystemPrompt(),
+        messages:state.history
+      })
+    });
+    const data1 = await resp1.json();
+    const raw1  = data1.content?.[0]?.text||'{}';
+
+    let parsed;
+    try {
+      const clean = raw1.replace(/```json?\s*/gi,'').replace(/```\s*/g,'').trim();
+      parsed = JSON.parse(clean);
+    } catch { parsed={story:raw1,type:'choice',actions:['Продолжить...']}; }
+
+    if (!parsed.story || parsed.story.trim()==='{}'||parsed.story.trim()==='...') {
+      showTyping(false); state.locked=false;
+      setTimeout(()=>askDM(null),1500); return;
+    }
+    // Если модель не дала actions — принудительно просим продолжить с кубиком или выбором
+    if (parsed.type==='choice' && (!parsed.actions || parsed.actions.length===0)) {
+      parsed.actions = ['▶️ Продолжить...'];
+    }
+
+    // ── ЗАПРОС 2: переписываем story в живой формат ──
+    // Формируем контекст для редактора
+    const invAdded  = parsed.char_update?.inventory_add  || [];
+    const goldDelta = (parsed.char_update?.gold ?? charState.gold) - charState.gold;
+    const invBlock  = invAdded.length
+      ? '\\n\\nНайдено в сцене:\\n' + invAdded.map(i=>`${i.icon||'📦'} ${i.name} — ${i.desc||''}`).join('\\n')
+      : '';
+    const goldBlock = goldDelta > 0
+      ? `\\n\\n💰 Золото +${goldDelta} (итого ${(parsed.char_update?.gold||charState.gold)})`
+      : '';
+
+    const rewritePrompt = `Ты — литературный редактор текстовой RPG. Перепиши текст сцены.
+
+ПРАВИЛА:
+1. НЕ начинай с имени персонажа. Сразу — действие, ощущения, мир вокруг.
+2. Абзацы по 1-2 предложения, разделены одной пустой строкой.
+3. Диалоги отдельной строкой: — Реплика, — говорит персонаж.
+4. 2-3 эмодзи по смыслу в тексте.
+5. От второго лица ("ты видишь", "в руках").
+6. Живой и кинематографичный стиль.
+7. НЕ добавляй блоки "Найдено:", "Золото:", "У тебя есть выбор:" — это делается отдельно.
+8. НЕ перечисляй варианты действий в тексте — только повествование.
+
+ИСХОДНЫЙ ТЕКСТ:
+${parsed.story}${invBlock}${goldBlock}
+
+Верни ТОЛЬКО переписанный текст без кавычек и пояснений.`;
+
+    const resp2 = await fetch('https://dnd-proxy.vercel.app/api/proxy',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:800,
+        system:'Ты литературный редактор RPG. Возвращай только переписанный текст.',
+        messages:[{role:'user',content:rewritePrompt}]
+      })
+    });
+    const data2   = await resp2.json();
+    const rewritten = (data2.content?.[0]?.text||'').trim();
+
+    // Используем переписанный текст если он не пустой, иначе оригинал
+    const finalStory = rewritten.length > 20 ? rewritten : parsed.story;
+
+    state.history.push({role:'assistant',content:raw1});
+    showTyping(false);
+    addDMMessage(finalStory);
+    if(parsed.char_update) applyCharUpdate(parsed.char_update);
+    renderActions(parsed);
+    saveProgress();
+
+  } catch(err){
+    showTyping(false);
+    state.locked = false;
+    if (!state._retryCount) state._retryCount = 0;
+    if (state._retryCount < 2) {
+      state._retryCount++;
+      setTimeout(() => askDM(null), 2000);
+      return;
+    }
+    state._retryCount = 0;
+    addDMMessage('⚠ Связь прервана. Попробуй ещё раз.');
+    setActionZone(`<button class="action-btn" onclick="window._retry()">🔄 Попробовать снова</button>`);
+    return;
+  }
+  state._retryCount = 0;
+  state.locked=false;
+}
+
+function renderActions(parsed){
+  const{type,actions,dice}=parsed;
+  let html='<div class="btn-group">';
+  if(type==='dice'){
+    state.waitingForDice=true;
+    state.diceNotation=dice?.notation||'1d20';
+    state.diceReason=dice?.reason||'Бросок';
+    html+=`<button class="dice-btn" onclick="window._roll()">🎲 Бросить кубик — ${state.diceReason} (${state.diceNotation})</button>`;
+  } else if(actions?.length){
+    state.currentActions=actions;
+    actions.forEach((a,i)=>{ html+=`<button class="action-btn" onclick="window._choice(${i})">${a}</button>`; });
+  }
+  html+='</div>'; setActionZone(html);
+}
+
+window._choice=i=>{
+  const a=state.currentActions?.[i];
+  if(!a||state.locked) return;
+  addPlayerMessage(a); askDM(`Я выбираю: ${a}`);
+};
+window._roll=()=>{
+  if(!state.waitingForDice||state.locked) return;
+  const n=state.diceNotation,r=state.diceReason,result=rollDice(n);
+  state.waitingForDice=false;
+  addDiceResult(n,result,r);
+  askDM(`Я бросил ${n} для "${r}" и выпало: ${result}`);
+};
+window._retry=()=>{
+  if(state.history.length&&state.history[state.history.length-1].role==='assistant') state.history.pop();
+  askDM(null);
+};
+
+function restoreHistory(history){
+  for(const msg of history){
+    if(msg.role==='user'&&!msg.content.startsWith('Начни новое')){
+      addPlayerMessage(msg.content.replace('Я выбираю: ',''));
+    } else if(msg.role==='assistant'){
+      try {
+        const p=JSON.parse(msg.content.replace(/```json?\s*/gi,'').replace(/```\s*/g,'').trim());
+        if(p.story) addDMMessage(p.story);
+      } catch { if(msg.content&&msg.content!=='{}') addDMMessage(msg.content); }
+    }
+  }
+  askDM('Продолжай приключение. Напомни коротко где я нахожусь и что происходит, затем дай варианты.');
+}
+
+document.getElementById('btn-logout').addEventListener('click',async()=>{ await signOut(auth); window.location.href='index.html'; });
+
+
+
+
+document.addEventListener('mouseout', function(e) {
+  if (e.target.closest('[data-has-tip]'))  hideGlobalTooltip();
+  if (e.target.closest('[data-item-name]')) hideItemTooltip();
+});
+
+
+window.goToMenu=()=>{ window.location.href='menu.html'; };
+
+// ══ ПИКСЕЛЬ-АРТ ══
+const PIXEL_SCALE = 1; // canvas 48x72 -> отображается в 96x144 через CSS
+
+// Палитры для каждого мира
+const WORLD_PALETTES = {
+  morrowind: { skin:'#c8a882', hair:'#3a2010', body:'#8b3d18', legs:'#5a2810', outline:'#1a0a00' },
+  lotr:      { skin:'#d4b896', hair:'#6a4a20', body:'#4a6040', legs:'#3a4830', outline:'#151510' },
+  hp:        { skin:'#e8c8a0', hair:'#3a2808', body:'#8b2020', legs:'#1a1a50', outline:'#100808' },
+  witcher:   { skin:'#d0b090', hair:'#f0f0f0', body:'#1a1a1a', legs:'#1a1a1a', outline:'#080808' },
+  starwars:  { skin:'#c8a870', hair:'#181818', body:'#303040', legs:'#202030', outline:'#080810' },
+  lego:      { skin:'#f0d020', hair:'#a06010', body:'#e03020', legs:'#2040c0', outline:'#101010' },
+  alice:     { skin:'#f0c8d0', hair:'#d0a8d8', body:'#4080c0', legs:'#c02080', outline:'#180818' },
+  stardew:   { skin:'#e8c898', hair:'#803010', body:'#608030', legs:'#4a6020', outline:'#181008' },
+  default:   { skin:'#c8a882', hair:'#3a2010', body:'#604888', legs:'#403060', outline:'#0e0e14' },
+};
+
+// Пиксельный рисунок персонажа (48x72 пикселей)
+// Формат: строки пикселей, символы: S=кожа H=волосы B=тело L=ноги .=прозрачный O=контур
+const CHAR_SPRITE = [
+  '....OOOOO....',
+  '...OSHHHSO...',
+  '...OSSSSO....',
+  '....OOOO.....',
+  '..OOBBBBBOO..',
+  '..OBBBBBBBOO.',
+  '..OBBBBBBBOO.',
+  '..OBBBBBBBOO.',
+  '..OOBBBBBOO..',
+  '..OO.OOO.OO..',
+  '..OO.OLL.OO..',
+  '..OO.OLL.OO..',
+  '..OO.OLL.OO..',
+  '..OO.OLL.OO..',
+  '....OSSSO....',
+];
+
+function drawPixelDoll(worldTheme, equipment) {
+  const canvas = document.getElementById('pixel-doll');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const pal = WORLD_PALETTES[worldTheme] || WORLD_PALETTES.default;
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const colorMap = { S: pal.skin, H: pal.hair, B: pal.body, L: pal.legs, O: pal.outline, '.': null };
+
+  // Если надето оружие — меняем цвет тела
+  if (equipment?.weapon) colorMap.B = '#6a4030';
+  if (equipment?.armor)  colorMap.B = '#505060';
+  if (equipment?.helmet) colorMap.H = '#707080';
+
+  const pw = 3, ph = 3;
+  // Центрируем спрайт на canvas 48x72
+  const spriteW = CHAR_SPRITE[0].length * pw;
+  const spriteH = CHAR_SPRITE.length * ph;
+  const offsetX = Math.floor((W - spriteW) / 2);
+  const offsetY = Math.floor((H - spriteH) / 2) - 4;
+
+  CHAR_SPRITE.forEach((row, ry) => {
+    for (let cx = 0; cx < row.length; cx++) {
+      const ch = row[cx];
+      const col = colorMap[ch];
+      if (!col) continue;
+      ctx.fillStyle = col;
+      ctx.fillRect(offsetX + cx * pw, offsetY + ry * ph, pw, ph);
+    }
+  });
+
+  // Меч справа если есть оружие
+  if (equipment?.weapon) {
+    ctx.fillStyle = '#c8c8d0';
+    ctx.fillRect(offsetX + spriteW + 2, offsetY + 20, 3, 16);
+    ctx.fillStyle = '#a06020';
+    ctx.fillRect(offsetX + spriteW, offsetY + 28, 8, 3);
+  }
+
+  // Шлем поверх головы
+  if (equipment?.helmet) {
+    ctx.fillStyle = '#808090';
+    ctx.fillRect(offsetX + 3, offsetY - 3, spriteW - 6, 4);
+  }
+}
+
+// Портрет (32x32 пикселей)
+const PORTRAIT_SPRITES = {
+  // Базовые лица по классам
+  warrior:  ['........','..OOOO..','..SSSSO.','..SHSSO.','..SSSSO.','..OBBO..','...OO...','........'],
+  mage:     ['..HHHH..','..OHSSO.','..SHSSO.','..SSSSO.','..OBBO..','...OO...','........','........'],
+  rogue:    ['........','...OOO..','..OSSSO.','..SHSHO.','..SSSSO.','..OBBO..','...OO...','........'],
+  default:  ['........','..OOOO..','..SSSSO.','..SHSHO.','..SSSSO.','..OBBO..','...OO...','........'],
+};
+
+const PORTRAIT_BG = {
+  morrowind:'#2a1a10', lotr:'#101a08', hp:'#180818', witcher:'#101010',
+  starwars:'#020410', lego:'#201000', alice:'#100818', stardew:'#081408', default:'#0e0e14',
+};
+
+function drawPortrait(worldTheme, charClass) {
+  const canvas = document.getElementById('portrait-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const pal = WORLD_PALETTES[worldTheme] || WORLD_PALETTES.default;
+  const bg  = PORTRAIT_BG[worldTheme] || PORTRAIT_BG.default;
+  ctx.clearRect(0, 0, 32, 32);
+
+  // Фон
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 32, 32);
+
+  // Декоративная рамка
+  ctx.fillStyle = pal.outline;
+  ctx.fillRect(0, 0, 32, 1); ctx.fillRect(0, 31, 32, 1);
+  ctx.fillRect(0, 0, 1, 32); ctx.fillRect(31, 0, 1, 32);
+
+  // Выбираем спрайт
+  const spriteKey = charClass?.toLowerCase().includes('маг')||charClass?.toLowerCase().includes('mag') ? 'mage'
+    : charClass?.toLowerCase().includes('разбой')||charClass?.toLowerCase().includes('rogue') ? 'rogue'
+    : charClass?.toLowerCase().includes('воин')||charClass?.toLowerCase().includes('war') ? 'warrior'
+    : 'default';
+  const sprite = PORTRAIT_SPRITES[spriteKey] || PORTRAIT_SPRITES.default;
+  const colorMap = { S: pal.skin, H: pal.hair, O: pal.outline, B: pal.body, '.': null };
+  const pw = 3, startX = 8, startY = 10;
+
+  sprite.forEach((row, ry) => {
+    for (let cx = 0; cx < row.length; cx++) {
+      const col = colorMap[row[cx]];
+      if (!col) continue;
+      ctx.fillStyle = col;
+      ctx.fillRect(startX + cx * pw, startY + ry * pw, pw, pw);
+    }
+  });
+
+  // Орнамент под миром — уголки
+  ctx.fillStyle = pal.accent || pal.body;
+  [[2,2],[27,2],[2,27],[27,27]].forEach(([x,y])=>{
+    ctx.fillRect(x,y,3,1); ctx.fillRect(x,y,1,3);
+  });
+}
+
+function updatePixelArt() {
+  const theme = document.body.className.match(/theme-(\S+)/)?.[1] || 'default';
+  drawPortrait(theme, document.getElementById('portrait-class')?.textContent);
+  drawPixelDoll(theme, charState.equipment);
+}
+
+// Начальный рендер пустых панелей
+renderAllPanels();
+
+// Экспорт в window для onclick
+window.openNakazy  = openNakazy;
+window.closeNakazy = closeNakazy;
+window.saveNakazy  = saveNakazy;
+window.goToMenu    = goToMenu;
