@@ -590,13 +590,37 @@ function renderActions(parsed){
     state.currentActions=actions;
     actions.forEach((a,i)=>{ html+=`<button class="action-btn" onclick="window._choice(${i})">${a}</button>`; });
   }
-  html+='</div>'; setActionZone(html);
+  html+=`<button class="action-btn action-btn--custom" onclick="window._toggleCustomAction()">✏️ Своё действие</button>`;
+  html+='</div>';
+  html+=`<div class="custom-action-row" id="custom-action-row" style="display:none;">
+    <input id="custom-action-input" class="custom-action-input" type="text" placeholder="Введи своё действие..." maxlength="200" />
+    <button class="action-btn action-btn--send" onclick="window._sendCustomAction()">▶ Отправить</button>
+  </div>`;
+  setActionZone(html);
 }
 
 function _choice(i){
   const a=state.currentActions?.[i];
   if(!a||state.locked) return;
   addPlayerMessage(a); askDM(`Я выбираю: ${a}`);
+}
+function _toggleCustomAction(){
+  const row = document.getElementById('custom-action-row');
+  if (!row) return;
+  const visible = row.style.display !== 'none';
+  row.style.display = visible ? 'none' : 'flex';
+  if (!visible) {
+    const inp = document.getElementById('custom-action-input');
+    if (inp) { inp.value=''; inp.focus(); }
+  }
+}
+function _sendCustomAction(){
+  if (state.locked) return;
+  const inp = document.getElementById('custom-action-input');
+  const text = inp ? inp.value.trim() : '';
+  if (!text) return;
+  addPlayerMessage(text);
+  askDM(`Я выбираю: ${text}`);
 }
 function _roll(){
   if(!state.waitingForDice||state.locked) return;
@@ -791,3 +815,5 @@ window.goToMenu    = goToMenu;
 window._choice     = _choice;
 window._roll       = _roll;
 window._retry      = _retry;
+window._toggleCustomAction = _toggleCustomAction;
+window._sendCustomAction   = _sendCustomAction;
