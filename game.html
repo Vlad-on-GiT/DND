@@ -28,7 +28,7 @@
 
 <div class="body-wrap"><div class="game-layout" style="padding-top:0;">
 
-  <!-- ══ ЛЕВАЯ ПАНЕЛЬ: ПЕРСОНАЖ ══ -->
+  <!-- ══ ЛЕВАЯ ПАНЕЛЬ: ПЕРСОНАЖ (десктоп) ══ -->
   <div class="side-panel" id="left-panel">
 
     <!-- Портрет героя -->
@@ -40,9 +40,11 @@
       <div class="panel-body" style="padding:10px 12px;">
         <div class="portrait-wrap">
           <canvas id="portrait-canvas" width="32" height="32"></canvas>
-          <div class="portrait-name" id="portrait-name">Странник</div>
-          <div class="portrait-class" id="portrait-class">Искатель приключений</div>
-          <div class="portrait-level" id="portrait-level">Ур. 1</div>
+          <div>
+            <div class="portrait-name" id="portrait-name">Странник</div>
+            <div class="portrait-class" id="portrait-class">Искатель приключений</div>
+            <div class="portrait-level" id="portrait-level">Ур. 1</div>
+          </div>
         </div>
       </div>
     </div>
@@ -85,9 +87,7 @@
         <span class="panel-header-title">Характеристики</span>
       </div>
       <div class="panel-body">
-        <div class="stats-grid" id="stats-grid">
-          <!-- заполняется JS -->
-        </div>
+        <div class="stats-grid" id="stats-grid"></div>
       </div>
     </div>
 
@@ -98,9 +98,7 @@
         <span class="panel-header-title">Навыки</span>
       </div>
       <div class="panel-body">
-        <div class="skills-list" id="skills-list">
-          <!-- заполняется JS -->
-        </div>
+        <div class="skills-list" id="skills-list"></div>
       </div>
     </div>
 
@@ -117,11 +115,8 @@
     <div id="save-indicator">📜 Сохранено</div>
   </div>
 
-  <!-- ══ ПРАВАЯ ПАНЕЛЬ: ЭКИПИРОВКА + ИНВЕНТАРЬ ══ -->
+  <!-- ══ ПРАВАЯ ПАНЕЛЬ: ИНВЕНТАРЬ (десктоп) ══ -->
   <div class="side-panel" id="right-panel">
-
-
-    <!-- ══ ИНВЕНТАРЬ ══ -->
     <div class="panel-card">
       <div class="panel-header">
         <span class="panel-header-icon">🎒</span>
@@ -136,7 +131,74 @@
         </div>
       </div>
     </div>
+  </div>
 
+</div>
+
+<!-- ══ МОБАЙЛ: выезжающая панель снизу ══ -->
+<div id="mobile-panel-wrap">
+  <!-- Шторка с характеристиками (скрыта по умолчанию) -->
+  <div id="mobile-stats-drawer">
+    <div class="stats-cols">
+      <!-- Колонка 1: герой + полоски -->
+      <div>
+        <div class="panel-card">
+          <div class="panel-header"><span class="panel-header-icon">👤</span><span class="panel-header-title">Герой</span></div>
+          <div class="panel-body" style="padding:6px 8px;">
+            <div class="portrait-wrap">
+              <canvas id="portrait-canvas-m" width="28" height="28"></canvas>
+              <div>
+                <div class="portrait-name" id="portrait-name-m">Странник</div>
+                <div class="portrait-class" id="portrait-class-m">—</div>
+                <div class="portrait-level" id="portrait-level-m">Ур. 1</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel-card" style="margin-top:6px;">
+          <div class="panel-header"><span class="panel-header-icon">⚔</span><span class="panel-header-title" id="char-panel-title-m">Персонаж</span></div>
+          <div class="panel-body">
+            <div class="stat-bar-row">
+              <div class="stat-bar-label"><span class="stat-bar-name" id="hp-label-m">Здоровье</span><span class="stat-bar-val" id="hp-val-m">100/100</span></div>
+              <div class="stat-bar-track"><div class="stat-bar-fill hp" id="hp-bar-m" style="width:100%"></div></div>
+            </div>
+            <div class="stat-bar-row">
+              <div class="stat-bar-label"><span class="stat-bar-name" id="mp-label-m">Мана</span><span class="stat-bar-val" id="mp-val-m">50/50</span></div>
+              <div class="stat-bar-track"><div class="stat-bar-fill mp" id="mp-bar-m" style="width:100%"></div></div>
+            </div>
+            <div class="stat-bar-row" style="margin-bottom:0">
+              <div class="stat-bar-label"><span class="stat-bar-name">Опыт</span><span class="stat-bar-val" id="xp-val-m">0/100</span></div>
+              <div class="stat-bar-track"><div class="stat-bar-fill xp" id="xp-bar-m" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Колонка 2: характеристики + навыки -->
+      <div>
+        <div class="panel-card">
+          <div class="panel-header"><span class="panel-header-icon">✦</span><span class="panel-header-title">Характеристики</span></div>
+          <div class="panel-body"><div class="stats-grid" id="stats-grid-m"></div></div>
+        </div>
+        <div class="panel-card" style="margin-top:6px;">
+          <div class="panel-header"><span class="panel-header-icon">★</span><span class="panel-header-title">Навыки</span></div>
+          <div class="panel-body"><div class="skills-list" id="skills-list-m"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Инвентарь-хэндл (всегда виден) -->
+  <div id="mobile-inv-handle">
+    <div class="panel-card">
+      <div class="panel-body">
+        <div class="inv-grid" id="inv-grid-m"></div>
+        <div class="gold-row">
+          <span class="gold-icon">🪙</span>
+          <span class="gold-label">Золото</span>
+          <span class="gold-val" id="gold-val-m">0</span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
