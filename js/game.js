@@ -1127,13 +1127,16 @@ window.addEventListener('resize', syncMobilePanels);
 
 // ══ ЗВЁЗДНЫЕ ВОЙНЫ: анимация кораблей ══
 (function initSWShips(){
+  // dir: 1=left→right, -1=right→left, 0=random each pass
   const SHIPS = [
-    { id:'sw-ship-xwing',      w:62, h:24, speed:22, y:0.12, opacity:0.35, dir:1  },
-    { id:'sw-ship-tiefighter', w:42, h:26, speed:16, y:0.30, opacity:0.28, dir:-1 },
-    { id:'sw-ship-falcon',     w:58, h:28, speed:12, y:0.55, opacity:0.22, dir:1  },
-    { id:'sw-ship-destroyer',  w:82, h:32, speed:7,  y:0.70, opacity:0.18, dir:-1 },
-    { id:'sw-ship-xwing',      w:48, h:20, speed:28, y:0.20, opacity:0.25, dir:1  },
-    { id:'sw-ship-tiefighter', w:34, h:22, speed:20, y:0.80, opacity:0.20, dir:-1 },
+    { id:'sw-ship-xwing',      w:70,  h:36, speed:24, yFrac:0.10, opacity:0.40 },
+    { id:'sw-ship-bwing',      w:64,  h:36, speed:14, yFrac:0.25, opacity:0.30 },
+    { id:'sw-ship-tiefighter', w:44,  h:32, speed:18, yFrac:0.40, opacity:0.32 },
+    { id:'sw-ship-falcon',     w:56,  h:36, speed:11, yFrac:0.58, opacity:0.28 },
+    { id:'sw-ship-deathstar',  w:50,  h:50, speed:5,  yFrac:0.72, opacity:0.20 },
+    { id:'sw-ship-xwing',      w:54,  h:28, speed:30, yFrac:0.18, opacity:0.28 },
+    { id:'sw-ship-tiefighter', w:36,  h:28, speed:22, yFrac:0.85, opacity:0.22 },
+    { id:'sw-ship-bwing',      w:48,  h:30, speed:16, yFrac:0.65, opacity:0.18 },
   ];
   let container = null;
   const shipEls = [];
@@ -1162,15 +1165,18 @@ window.addEventListener('resize', syncMobilePanels);
       container.appendChild(svg);
 
       // Random start position
-      const startX = s.dir === 1
-        ? -(s.w + Math.random() * vw)
-        : vw + Math.random() * vw;
+      // Random direction each ship
+      const dir = Math.random() > 0.5 ? 1 : -1;
+      const startX = dir === 1
+        ? -(s.w + Math.random() * vw * 0.5)
+        : vw + Math.random() * vw * 0.5;
+      const speed = s.speed * (0.7 + Math.random() * 0.6);
 
       shipEls.push({
-        el: svg, s,
+        el: svg, s, dir,
         x: startX,
-        y: window.innerHeight * s.y + (Math.random() - 0.5) * 40,
-        vx: s.speed * s.dir * (0.8 + Math.random() * 0.4),
+        y: window.innerHeight * s.yFrac + (Math.random() - 0.5) * 60,
+        vx: speed * dir,
       });
     });
     animate();
@@ -1183,23 +1189,26 @@ window.addEventListener('resize', syncMobilePanels);
     }
     const vw = window.innerWidth;
     shipEls.forEach(obj => {
-      obj.x += obj.vx * 0.016; // ~60fps delta
-      // Wrap around
-      if (obj.s.dir === 1 && obj.x > vw + obj.s.w + 20) {
-        obj.x = -obj.s.w - 10;
-        obj.y = window.innerHeight * obj.s.y + (Math.random()-0.5)*60;
-      } else if (obj.s.dir === -1 && obj.x < -(obj.s.w + 20)) {
-        obj.x = vw + obj.s.w + 10;
-        obj.y = window.innerHeight * obj.s.y + (Math.random()-0.5)*60;
+      obj.x += obj.vx * 0.016;
+      // Wrap + pick new random direction on each pass
+      if (obj.dir === 1 && obj.x > vw + obj.s.w + 20) {
+        obj.dir = Math.random() > 0.5 ? 1 : -1;
+        obj.x   = obj.dir === 1 ? -obj.s.w - 10 : vw + obj.s.w + 10;
+        obj.y   = window.innerHeight * obj.s.yFrac + (Math.random()-0.5)*80;
+        obj.vx  = obj.s.speed * obj.dir * (0.7 + Math.random()*0.6);
+      } else if (obj.dir === -1 && obj.x < -(obj.s.w + 20)) {
+        obj.dir = Math.random() > 0.5 ? 1 : -1;
+        obj.x   = obj.dir === 1 ? -obj.s.w - 10 : vw + obj.s.w + 10;
+        obj.y   = window.innerHeight * obj.s.yFrac + (Math.random()-0.5)*80;
+        obj.vx  = obj.s.speed * obj.dir * (0.7 + Math.random()*0.6);
       }
-      // Apply flip for RTL ships
-      if (obj.s.dir === -1) {
-        obj.el.style.left = (obj.x - obj.s.w) + 'px';
-        obj.el.style.top  = obj.y + 'px';
+      obj.el.style.top = obj.y + 'px';
+      if (obj.dir === -1) {
+        obj.el.style.left      = (obj.x - obj.s.w) + 'px';
         obj.el.style.transform = 'scaleX(-1)';
       } else {
-        obj.el.style.left = obj.x + 'px';
-        obj.el.style.top  = obj.y + 'px';
+        obj.el.style.left      = obj.x + 'px';
+        obj.el.style.transform = '';
       }
     });
     requestAnimationFrame(animate);
