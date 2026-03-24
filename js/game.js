@@ -265,6 +265,58 @@ function renderAllPanels(){
   // Синхронизируем уровень в панели "Герой"
   const lvlEl = document.getElementById('portrait-level');
   if (lvlEl) lvlEl.textContent = 'Ур. ' + playerLevel;
+  syncMobilePanels();
+}
+
+function syncMobilePanels(){
+  const isMobile = window.innerWidth <= 860;
+  if (!isMobile) return;
+  const {hp,mp,xp} = charState;
+  // Bars
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  const setW = (id, w) => { const el = document.getElementById(id); if(el) el.style.width = w; };
+  set('hp-val-m',  `${hp.cur}/${hp.max}`);
+  set('mp-val-m',  `${mp.cur}/${mp.max}`);
+  set('xp-val-m',  `${xp.cur}/${xp.max}`);
+  setW('hp-bar-m',  `${Math.max(0,Math.min(100,(hp.cur/hp.max)*100))}%`);
+  setW('mp-bar-m',  `${Math.max(0,Math.min(100,(mp.cur/mp.max)*100))}%`);
+  setW('xp-bar-m',  `${Math.max(0,Math.min(100,(xp.cur/xp.max)*100))}%`);
+  // Stats
+  const sgm = document.getElementById('stats-grid-m');
+  if(sgm) sgm.innerHTML = Object.entries(charState.stats).map(([n,v])=>
+    `<div class="stat-item"><div class="stat-item-val">${v}</div><div class="stat-item-name">${n}</div></div>`).join('');
+  // Skills
+  const slm = document.getElementById('skills-list-m');
+  if(slm) slm.innerHTML = charState.skills.map(s=>`
+    <div class="skill-row">
+      <span class="skill-name">${s.name}</span>
+      <div class="skill-dots">${[1,2,3,4,5].map(i=>`<div class="skill-dot ${i<=s.level?'filled':''}"></div>`).join('')}</div>
+    </div>`).join('');
+  // Inventory
+  const igm = document.getElementById('inv-grid-m');
+  if(igm){
+    const cells = 8;
+    let h='';
+    for(let i=0;i<cells;i++){
+      const item=charState.inventory[i];
+      if(item) h+=`<div class="inv-cell has-item" data-item-name="${(item.name||'').replace(/"/g,'&quot;')}" data-item-desc="${(item.desc||'').replace(/"/g,'&quot;')}">${item.icon||'📦'}${item.qty>1?`<span class="item-qty">${item.qty}</span>`:''}</div>`;
+      else h+=`<div class="inv-cell"></div>`;
+    }
+    igm.innerHTML=h;
+  }
+  const gvm = document.getElementById('gold-val-m');
+  if(gvm) gvm.textContent = charState.gold;
+  // Portrait name/class/level
+  const pn=document.getElementById('portrait-name-m'), pc=document.getElementById('portrait-class-m'), pl=document.getElementById('portrait-level-m');
+  const pnD=document.getElementById('portrait-name'), pcD=document.getElementById('portrait-class');
+  if(pn&&pnD) pn.textContent=pnD.textContent;
+  if(pc&&pcD) pc.textContent=pcD.textContent;
+  if(pl) pl.textContent='Ур. '+playerLevel;
+  // HP/MP labels
+  const hplD=document.getElementById('hp-label'), mplD=document.getElementById('mp-label');
+  const hplM=document.getElementById('hp-label-m'), mplM=document.getElementById('mp-label-m');
+  if(hplD&&hplM) hplM.textContent=hplD.textContent;
+  if(mplD&&mplM) mplM.textContent=mplD.textContent;
 }
 
 function renderBars(){
@@ -1009,6 +1061,42 @@ function updatePixelArt() {
 
 // Начальный рендер пустых панелей
 renderAllPanels();
+
+// ══ МОБАЙЛ: свайп для шторки характеристик ══
+(function initMobileDrawer(){
+  const handle = document.getElementById('mobile-inv-handle');
+  const drawer = document.getElementById('mobile-stats-drawer');
+  if (!handle || !drawer) return;
+
+  let startY = 0, isDragging = false, isOpen = false;
+
+  function open()  { drawer.classList.add('open');    isOpen = true;  }
+  function close() { drawer.classList.remove('open'); isOpen = false; }
+  function toggle(){ isOpen ? close() : open(); }
+
+  // Tap на хэндл = toggle
+  handle.addEventListener('click', toggle);
+
+  // Touch swipe
+  handle.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    isDragging = true;
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    const dy = startY - e.changedTouches[0].clientY;
+    if (dy > 30)  open();   // свайп вверх
+    if (dy < -30) close();  // свайп вниз
+  }, { passive: true });
+
+  // Синхронизируем при ресайзе
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 860) close();
+    syncMobilePanels();
+  });
+})();
 
 // Экспорт в window для onclick
 window.openNakazy  = openNakazy;
