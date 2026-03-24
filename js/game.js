@@ -494,8 +494,15 @@ function parseGeminiResponse(text) {
     if (!result.story) result.story = text.trim();
   }
 
-  // Убираем END_STORY если вдруг попал в story
-  result.story = result.story.replace(/\bEND_STORY\b/gi, '').trim();
+  // Убираем все служебные маркеры если вдруг попали в story
+  result.story = result.story
+    .replace(/\bEND_STORY\b/gi, '')
+    .replace(/\bSTORY\b/gi, '')
+    .replace(/^TYPE=\S+/gim, '')
+    .replace(/^ACTIONS=.*/gim, '')
+    .replace(/^DATA=\{.*\}/gim, '')
+    .replace(/^DICE=\{.*\}/gim, '')
+    .trim();
 
   // Тип
   result.type = /TYPE=DICE/i.test(text) ? 'dice' : 'choice';
@@ -593,7 +600,8 @@ function renderActions(parsed){
   html+=`<button class="action-btn action-btn--custom" onclick="window._toggleCustomAction()">✏️ Своё действие</button>`;
   html+='</div>';
   html+=`<div class="custom-action-row" id="custom-action-row" style="display:none;">
-    <input id="custom-action-input" class="custom-action-input" type="text" placeholder="Введи своё действие..." maxlength="200" />
+    <input id="custom-action-input" class="custom-action-input" type="text" placeholder="Введи своё действие..." maxlength="200"
+      onkeydown="if(event.key==='Enter') window._sendCustomAction()" />
     <button class="action-btn action-btn--send" onclick="window._sendCustomAction()">▶ Отправить</button>
   </div>`;
   setActionZone(html);
