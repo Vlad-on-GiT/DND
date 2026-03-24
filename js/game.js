@@ -17,7 +17,7 @@
 import { initializeApp }     from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
-import firebaseConfig from "./firebase-config.js";
+import firebaseConfig from "../firebase-config.js";
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -494,7 +494,7 @@ async function askDM(userMessage){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'llama-3.3-70b-versatile',
+        
         max_tokens:1200,
         system:buildSystemPrompt(),
         messages:state.history
@@ -550,7 +550,7 @@ ${parsed.story}${invBlock}${goldBlock}
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'llama-3.3-70b-versatile',
+        
         max_tokens:800,
         system:'Ты литературный редактор RPG. Возвращай только переписанный текст.',
         messages:[{role:'user',content:rewritePrompt}]
