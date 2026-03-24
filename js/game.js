@@ -281,7 +281,7 @@ function applyCharUpdate(update){
     levelUp();
     changed=true;
   }
-  if(update.gold!==undefined){ charState.gold=update.gold; changed=true; }
+  if(update.gold!==undefined){ charState.gold=Math.max(0,update.gold); changed=true; }
 
   if(update.stats){ Object.assign(charState.stats,update.stats); changed=true; }
 
@@ -402,8 +402,9 @@ HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${x
 
 ═══ МЕХАНИКА ═══
 - Рискованное действие где стат не гарантирует успех → TYPE=DICE
-- xp_add каждый ход: обычная сцена 5-10, бой 20-50, применение навыка 10-15. ВСЕГДА xp_add (не xp), опыт никогда не убывает
+- xp_add ТОЛЬКО за значимые события: успешный бой +20-50, применение навыка с трудностью +10-15, важный сюжетный момент +10-20. Обычные сцены без риска и усилий — НЕ добавляй xp_add вообще (не включай в DATA). НЕ добавляй xp_add каждый ход автоматически.
 - Урон от врагов: hp -5 до -20. HP не ниже 1.
+- Золото НИКОГДА не может быть меньше 0. Если у игрока недостаточно золота для покупки — откажи в покупке в тексте, не трать золото, не включай gold в DATA.
 - mp < 10 — магические навыки недоступны, упоминай это
 
 ═══ ФОРМАТ ОТВЕТА (строго!) ═══
@@ -414,7 +415,7 @@ STORY
 END_STORY
 TYPE=DICE
 DICE={notation:1d20,reason:Проверка Ловкости — нужно 12+}
-DATA={xp_add:5}
+DATA={xp_add:15}  ← только если бросок за значимое действие, иначе DATA без xp_add
 
 Выбор:
 STORY
@@ -422,7 +423,7 @@ STORY
 END_STORY
 TYPE=CHOICE
 ACTIONS=⚔️ Атаковать|💬 Поговорить|🏃 Сбежать
-DATA={xp_add:8}
+DATA={}  ← xp_add включай только за реальные достижения, не за каждый ход
 
 DATA — JSON только с изменившимися полями:
 hp, mp, gold — числа | xp_add — ПРИРОСТ опыта (всегда положительное число!)
