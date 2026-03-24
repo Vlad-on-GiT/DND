@@ -276,11 +276,36 @@ function applyCharUpdate(update){
 
   if(update.stats){ Object.assign(charState.stats,update.stats); changed=true; }
 
-  if(update.skills){ update.skills.forEach(us=>{ const s=charState.skills.find(sk=>sk.name===us.name); if(s) s.level=Math.max(1,Math.min(5,us.level)); }); changed=true; }
+  if(update.skills){
+    update.skills.forEach(us=>{
+      let s = charState.skills.find(sk => sk.name === us.name);
+      if (!s) s = charState.skills.find(sk => sk.name.toLowerCase().trim() === (us.name||"").toLowerCase().trim());
+      if (s) {
+        const newLevel = Math.max(1, Math.min(5, us.level));
+        console.log('[DM] skill "' + s.name + '" ' + s.level + ' -> ' + newLevel);
+        s.level = newLevel;
+      } else {
+        console.warn("[DM] skill not found:", us.name, "| available:", charState.skills.map(sk=>sk.name));
+      }
+    });
+    changed=true;
+  }
 
   if(update.inventory_add){ update.inventory_add.forEach(item=>{ const ex=charState.inventory.find(i=>i.name===item.name); if(ex) ex.qty=(ex.qty||1)+(item.qty||1); else charState.inventory.push({...item,qty:item.qty||1}); }); changed=true; }
 
-  if(update.inventory_remove){ update.inventory_remove.forEach(name=>{ const idx=charState.inventory.findIndex(i=>i.name===name); if(idx>=0) charState.inventory.splice(idx,1); }); changed=true; }
+  if(update.inventory_remove){
+    update.inventory_remove.forEach(name=>{
+      let idx = charState.inventory.findIndex(i => i.name === name);
+      if (idx < 0) idx = charState.inventory.findIndex(i => i.name.toLowerCase().trim() === (name||'').toLowerCase().trim());
+      if (idx >= 0) {
+        console.log('[DM] inventory_remove:', charState.inventory[idx].name);
+        charState.inventory.splice(idx, 1);
+      } else {
+        console.warn('[DM] inventory_remove: item not found:', name, '| inventory:', charState.inventory.map(i=>i.name));
+      }
+    });
+    changed=true;
+  }
 
   if(changed){ renderAllPanels(); updatePixelArt(); saveCharState(); }
 }
@@ -511,9 +536,34 @@ function parseGeminiResponse(text) {
   }
 
   // DATA — char_update
-  const dataM = text.match(/DATA=(\{[\s\S]*?\})(?:[\s\n]|$)/i);
-  if (dataM) {
-    try { result.char_update = JSON.parse(dataM[1]); } catch {}
+  // Gemini sometimes writes DATA= with newlines/spaces inside the JSON,
+  // so we find the opening brace and manually balance braces to extract it.
+  const dataIdx = text.search(/DATA=\s*\{/i);
+  if (dataIdx !== -1) {
+    const braceStart = text.indexOf('{', dataIdx);
+    let depth = 0, end = -1;
+    for (let i = braceStart; i < text.length; i++) {
+      if (text[i] === '{') depth++;
+      else if (text[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    if (end !== -1) {
+      const jsonStr = text.slice(braceStart, end + 1);
+      try {
+        result.char_update = JSON.parse(jsonStr);
+        console.log('[DM] DATA parsed:', result.char_update);
+      } catch(e) {
+        // Try cleaning common Gemini quirks: unquoted keys, trailing commas
+        try {
+          const cleaned = jsonStr
+            .replace(/,\s*([}\]])/g, '$1')          // trailing commas
+            .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":'); // unquoted keys
+          result.char_update = JSON.parse(cleaned);
+          console.log('[DM] DATA parsed (cleaned):', result.char_update);
+        } catch(e2) {
+          console.warn('[DM] DATA parse failed:', jsonStr, e2);
+        }
+      }
+    }
   }
 
   if (result.type==='choice' && result.actions.length===0) {
