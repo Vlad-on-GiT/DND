@@ -72,6 +72,7 @@ onAuthStateChanged(auth, user => {
       // Пробуем загрузить сохранённый стейт (если уже играли эту сессию)
       if (!loadCharState()) initCharForWorld(d);
       renderAllPanels();
+      if (pendingLevelUpPoints > 0) openLevelUpModal();
       askDM(d.startMsg);
     } catch(e) {
       console.error('newgame parse error:', e);
@@ -88,6 +89,7 @@ onAuthStateChanged(auth, user => {
       if (d.charState) Object.assign(charState, d.charState);
       loadCharState(); // перезаписывает если есть более свежее в localStorage
       renderAllPanels();
+      if (pendingLevelUpPoints > 0) openLevelUpModal();
       restoreHistory(state.history);
     } catch(e) {
       console.error('continue parse error:', e);
@@ -104,7 +106,7 @@ onAuthStateChanged(auth, user => {
 function saveCharState(){
   try {
     const key = 'dnd_char_' + (state.uid||'guest') + '_' + (state.gameId||'');
-    localStorage.setItem(key, JSON.stringify({ charState, playerLevel }));
+    localStorage.setItem(key, JSON.stringify({ charState, playerLevel, pendingLevelUpPoints }));
   } catch(e){ console.warn('saveCharState:', e); }
 }
 
@@ -116,6 +118,7 @@ function loadCharState(){
     const d = JSON.parse(saved);
     if (d.charState)    Object.assign(charState, d.charState);
     if (d.playerLevel)  playerLevel = d.playerLevel;
+    if (d.pendingLevelUpPoints) pendingLevelUpPoints = d.pendingLevelUpPoints;
     return true;
   } catch(e){ return false; }
 }
@@ -271,16 +274,8 @@ function applyCharUpdate(update){
   if(update.hp_max!==undefined){ charState.hp.max=update.hp_max; changed=true; }
   if(update.mp!==undefined){ charState.mp.cur=Math.max(0,Math.min(charState.mp.max,update.mp)); changed=true; }
   if(update.mp_max!==undefined){ charState.mp.max=update.mp_max; changed=true; }
-  // xp_add = delta (preferred). Legacy xp = absolute but never decrease.
-  if(update.xp_add!==undefined){ charState.xp.cur += Math.max(0, update.xp_add); changed=true; }
-  else if(update.xp!==undefined){ charState.xp.cur = Math.max(charState.xp.cur, update.xp); changed=true; }
-  // Level up loop (handles multi-level jumps)
-  while(charState.xp.cur >= charState.xp.max){
-    charState.xp.cur -= charState.xp.max;
-    charState.xp.max = Math.round(charState.xp.max * 1.5);
-    levelUp();
-    changed=true;
-  }
+  // XP is managed by game code only — ignore any xp/xp_add from Gemini
+  // (Gemini tends to add XP every turn regardless of instructions)
   if(update.gold!==undefined){ charState.gold=Math.max(0,update.gold); changed=true; }
 
   if(update.stats){ Object.assign(charState.stats,update.stats); changed=true; }
@@ -320,15 +315,76 @@ function applyCharUpdate(update){
 }
 
 let playerLevel = 1;
+let pendingLevelUpPoints = 0;  // очки для распределения
+
 function levelUp(){
   playerLevel++;
-  Object.keys(charState.stats).forEach(k=>{ charState.stats[k]+=1; });
-  charState.hp.max+=10; charState.hp.cur=charState.hp.max;
-  charState.mp.max+=5;  charState.mp.cur=charState.mp.max;
-  document.getElementById('portrait-level').textContent=`Ур. ${playerLevel}`;
-  addDMMessage(`✨ Уровень ${playerLevel}! Все характеристики улучшены.`);
+  // HP и MP растут автоматически, характеристики — выбор игрока
+  charState.hp.max += 10; charState.hp.cur = charState.hp.max;
+  charState.mp.max += 5;  charState.mp.cur = charState.mp.max;
+  document.getElementById('portrait-level').textContent = 'Ур. ' + playerLevel;
+  addDMMessage('✨ **Уровень ' + playerLevel + '!** HP и мана восстановлены. Распредели 2 очка характеристик!');
   updatePixelArt();
   saveCharState();
+  pendingLevelUpPoints += 2;
+  openLevelUpModal();
+}
+
+function openLevelUpModal(){
+  const modal = document.getElementById('levelup-modal');
+  if (!modal) return;
+  renderLevelUpModal();
+  modal.classList.add('open');
+}
+
+function renderLevelUpModal(){
+  const pts = document.getElementById('lu-points');
+  if (pts) pts.textContent = pendingLevelUpPoints;
+  const grid = document.getElementById('lu-stat-grid');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(charState.stats).map(([name, val]) => `
+    <div class="lu-stat-row">
+      <div class="lu-stat-info">
+        <span class="lu-stat-name">${name}</span>
+        <span class="lu-stat-val" id="lu-val-${name}">${val}</span>
+      </div>
+      <button class="lu-plus-btn" onclick="window._luAddStat('${name}')" ${pendingLevelUpPoints <= 0 ? 'disabled' : ''}>+</button>
+    </div>`).join('');
+}
+
+window._luAddStat = function(statName){
+  if (pendingLevelUpPoints <= 0) return;
+  charState.stats[statName] = (charState.stats[statName] || 0) + 1;
+  pendingLevelUpPoints--;
+  renderLevelUpModal();
+  renderStats();
+  saveCharState();
+  if (pendingLevelUpPoints <= 0) {
+    setTimeout(() => {
+      document.getElementById('levelup-modal').classList.remove('open');
+    }, 600);
+  }
+};
+
+window._closeLevelUpModal = function(){
+  // Only allow closing if all points are spent
+  if (pendingLevelUpPoints <= 0) {
+    document.getElementById('levelup-modal').classList.remove('open');
+  }
+};
+
+// ══ XP — детерминированное начисление опыта кодом, не ИИ ══
+function grantXP(amount){
+  if(!amount || amount <= 0) return;
+  charState.xp.cur += amount;
+  while(charState.xp.cur >= charState.xp.max){
+    charState.xp.cur -= charState.xp.max;
+    charState.xp.max = Math.round(charState.xp.max * 1.5);
+    levelUp();
+  }
+  renderBars();
+  saveCharState();
+  console.log('[XP] +' + amount + ' → ' + charState.xp.cur + '/' + charState.xp.max);
 }
 
 // ══ СОХРАНЕНИЕ ══
@@ -402,7 +458,7 @@ HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${x
 
 ═══ МЕХАНИКА ═══
 - Рискованное действие где стат не гарантирует успех → TYPE=DICE
-- xp_add ТОЛЬКО за значимые события: успешный бой +20-50, применение навыка с трудностью +10-15, важный сюжетный момент +10-20. Обычные сцены без риска и усилий — НЕ добавляй xp_add вообще (не включай в DATA). НЕ добавляй xp_add каждый ход автоматически.
+- Опыт начисляется системой автоматически. НЕ включай xp, xp_add в DATA никогда.
 - Урон от врагов: hp -5 до -20. HP не ниже 1.
 - Золото НИКОГДА не может быть меньше 0. Если у игрока недостаточно золота для покупки — откажи в покупке в тексте, не трать золото, не включай gold в DATA.
 - mp < 10 — магические навыки недоступны, упоминай это
@@ -415,7 +471,7 @@ STORY
 END_STORY
 TYPE=DICE
 DICE={notation:1d20,reason:Проверка Ловкости — нужно 12+}
-DATA={xp_add:15}  ← только если бросок за значимое действие, иначе DATA без xp_add
+DATA={}  ← или только изменившиеся hp/mp/gold/stats/skills/inventory
 
 Выбор:
 STORY
@@ -423,10 +479,10 @@ STORY
 END_STORY
 TYPE=CHOICE
 ACTIONS=⚔️ Атаковать|💬 Поговорить|🏃 Сбежать
-DATA={}  ← xp_add включай только за реальные достижения, не за каждый ход
+DATA={}  ← или только изменившиеся поля
 
 DATA — JSON только с изменившимися полями:
-hp, mp, gold — числа | xp_add — ПРИРОСТ опыта (всегда положительное число!)
+hp, mp, gold — числа (только изменившиеся)
 stats: {"Ловкость":13}
 skills: [{"name":"Скрытность","level":2}]
 inventory_add: [{"name":"Зелье","icon":"🧪","qty":1,"desc":"Лечит 20 HP"}]
@@ -614,6 +670,8 @@ async function askDM(userMessage){
     showTyping(false);
     addDMMessage(parsed.story);
     if(parsed.char_update) applyCharUpdate(parsed.char_update);
+    // Grant XP by scene type: CHOICE = small passive xp, DICE scenes grant XP in _roll
+    if(parsed.type === 'choice') grantXP(5);
     state.locked = false;   // ← разблокируем ДО renderActions, иначе кнопки не работают
     renderActions(parsed);
     saveProgress();
@@ -676,6 +734,11 @@ function _roll(){
   const n=state.diceNotation,r=state.diceReason,result=rollDice(n);
   state.waitingForDice=false;
   addDiceResult(n,result,r);
+  // Parse threshold from reason like "Проверка Ловкости — нужно 12+"
+  const threshM = r.match(/(\d+)\+/);
+  const threshold = threshM ? parseInt(threshM[1]) : 10;
+  const success = result >= threshold;
+  grantXP(success ? 20 : 8);  // success: +20, failure: +8 (still learned something)
   askDM(`Я бросил ${n} для "${r}" и выпало: ${result}`);
 }
 function _retry(){
