@@ -45,6 +45,20 @@ const state = {
   uid:null, gameId:'session_'+Date.now(),
   worldPrompt:null, thinkingText:'Рассказчик думает',
   nakazText:'',
+  worldId: null,
+};
+
+// ── Настройки MP под каждый мир: название, цвет-смысл, механика ──
+const WORLD_MP_CONFIG = {
+  morrowind: { label:'Магия',      mechanic:'mp < 10 — заклинания недоступны, колдовство требует маны.' },
+  lotr:      { label:'Воля',       mechanic:'mp — запас воли. < 10 — персонаж деморализован, не может вести за собой и противостоять тьме.' },
+  hp:        { label:'Магическая сила', mechanic:'mp — запас магической силы. < 10 — сложные заклинания не удаются, только простые чары.' },
+  witcher:   { label:'Выносливость знаков', mechanic:'mp — выносливость для знаков и уклонений. < 10 — знаки недоступны, только мечи.' },
+  starwars:  { label:'Сила Джедая', mechanic:'mp — связь с Силой. < 10 — способности Силы недоступны, только физические действия.' },
+  lego:      { label:'Воображение', mechanic:'mp — воображение для строительства и изобретений. < 10 — можно только ломать, не строить.' },
+  alice:     { label:'Безумие',    mechanic:'mp — запас безумия (чем больше — тем лучше в Стране Чудес!). < 10 — Алиса начинает вести себя слишком логично и мир отвергает её.' },
+  stardew:   { label:'Усталость',  mechanic:'mp — усталость (максимум = запас энергии). Каждое физическое действие тратит mp. < 10 — персонаж изнемогает: штраф к броскам. Сон восстанавливает полностью.' },
+  default:   { label:'Мана',       mechanic:'mp < 10 — магические навыки недоступны.' },
 };
 
 // ══ AUTH ══
@@ -134,32 +148,58 @@ function initCharForWorld(d) {
   }
   // Подбираем статы под мир
   const worldId = d.worldTheme||'';
+  // ── ХАРАКТЕРИСТИКИ: осмысленные под каждый мир ──
   const statSets = {
-    morrowind:{Сила:10,Ловкость:12,Интеллект:10,Удача:8},
-    lotr:{Сила:12,Выносливость:10,Мудрость:10,Воля:8},
-    hp:{Интеллект:14,Смелость:10,Хитрость:8,Удача:10},
-    witcher:{Сила:12,Ловкость:12,Знания:10,Знаки:8},
-    starwars:{Сила:10,Ловкость:12,Интеллект:10,Сила_духа:10},
-    lego:{Творчество:14,Ловкость:10,Сила:8,Удача:10},
-    alice:{Безумие:12,Любопытство:14,Логика:6,Везение:10},
-    stardew:{Земледелие:10,Горное_дело:8,Рыбалка:8,Дружба:12},
+    // Morrowind: классическая RPG — тело, ловкость, разум, удача
+    morrowind:  { Сила:10, Ловкость:12, Интеллект:10, Удача:8 },
+    // ВК: физика, стойкость духа, мудрость предков, воля
+    lotr:       { Сила:12, Выносливость:10, Мудрость:10, Воля:8 },
+    // Гарри Поттер: магическая сила, интеллект, смелость, удача
+    hp:         { Магия:12, Интеллект:10, Смелость:10, Удача:8 },
+    // Ведьмак: бой — тело и рефлексы; охота — знания и чутьё
+    witcher:    { Сила:12, Рефлексы:12, Знания:10, Чутьё:8 },
+    // Звёздные войны: тело, ловкость, разум, связь с Силой
+    starwars:   { Сила:10, Ловкость:12, Интеллект:10, Единство_с_Силой:8 },
+    // LEGO: воображение — главный стат; координация, физика, удача
+    lego:       { Творчество:14, Координация:10, Сила:8, Удача:10 },
+    // Алиса: здесь всё шиворот-навыворот — любопытство важнее логики
+    alice:      { Любопытство:14, Безрассудство:10, Логика:6, Везение:10 },
+    // Stardew: выносливость (=макс усталость), здоровье, харизма, внимательность
+    stardew:    { Выносливость:10, Здоровье:10, Харизма:8, Внимательность:10 },
   };
   if (statSets[worldId]) charState.stats = statSets[worldId];
+
+  // ── НАВЫКИ: то чем реально занимается персонаж в этом мире ──
   const skillSets = {
-    morrowind:[{name:'Длинные клинки',level:1},{name:'Скрытность',level:1},{name:'Красноречие',level:1},{name:'Алхимия',level:1},{name:'Торговля',level:1}],
-    lotr:[{name:'Владение мечом',level:1},{name:'Стрельба',level:1},{name:'Следопыт',level:1},{name:'Магия',level:1},{name:'Дипломатия',level:1}],
-    hp:[{name:'Заклинания',level:1},{name:'Зелья',level:1},{name:'Трансфигурация',level:1},{name:'Полёт',level:1},{name:'Защита',level:1}],
-    witcher:[{name:'Мечи',level:1},{name:'Знаки',level:1},{name:'Алхимия',level:1},{name:'Слежка',level:1},{name:'Беглость',level:1}],
-    starwars:[{name:'Сила',level:1},{name:'Пилотаж',level:1},{name:'Стрельба',level:1},{name:'Техника',level:1},{name:'Хитрость',level:1}],
-    lego:[{name:'Строительство',level:1},{name:'Ловкость',level:1},{name:'Изобретения',level:1},{name:'Командование',level:1},{name:'Удача',level:1}],
-    alice:[{name:'Абсурд',level:1},{name:'Бег',level:1},{name:'Чаепитие',level:1},{name:'Загадки',level:1},{name:'Уменьшение',level:1}],
-    stardew:[{name:'Земледелие',level:1},{name:'Горное дело',level:1},{name:'Рыбалка',level:1},{name:'Кулинария',level:1},{name:'Дружба',level:1}],
+    // Morrowind: оружие, скрытность, магия, торговля, красноречие
+    morrowind: [{name:'Длинные клинки',level:1},{name:'Скрытность',level:1},{name:'Колдовство',level:1},{name:'Алхимия',level:1},{name:'Красноречие',level:1}],
+    // ВК: сражение, стрельба/следопыт, магия, выживание, лидерство
+    lotr:      [{name:'Владение оружием',level:1},{name:'Следопыт',level:1},{name:'Магия',level:1},{name:'Выживание',level:1},{name:'Лидерство',level:1}],
+    // ГП: заклинания, зельеварение, трансфигурация, полёт, прорицание
+    hp:        [{name:'Заклинания',level:1},{name:'Зельеварение',level:1},{name:'Трансфигурация',level:1},{name:'Полёт на метле',level:1},{name:'Прорицание',level:1}],
+    // Ведьмак: мечи, знаки, алхимия, охота на чудовищ, выживание
+    witcher:   [{name:'Фехтование',level:1},{name:'Знаки',level:1},{name:'Алхимия',level:1},{name:'Охота на чудовищ',level:1},{name:'Выживание',level:1}],
+    // Звёздные войны: Сила, пилотаж, бластер, механика, дипломатия
+    starwars:  [{name:'Владение Силой',level:1},{name:'Пилотаж',level:1},{name:'Стрельба из бластера',level:1},{name:'Механика',level:1},{name:'Дипломатия',level:1}],
+    // LEGO: строительство, изобретения, командование, акробатика, хитрость
+    lego:      [{name:'Строительство',level:1},{name:'Изобретения',level:1},{name:'Командование',level:1},{name:'Акробатика',level:1},{name:'Хитрость',level:1}],
+    // Алиса: абсурдная логика, бег, чаепитие/убеждение, загадки, изменение размера
+    alice:     [{name:'Абсурдная логика',level:1},{name:'Бег и прыжки',level:1},{name:'Искусство чаепития',level:1},{name:'Загадки',level:1},{name:'Изменение размера',level:1}],
+    // Stardew: фермерство, рыбная ловля, горное дело, собирательство, боевые навыки
+    stardew:   [{name:'Фермерство',level:1},{name:'Рыбная ловля',level:1},{name:'Горное дело',level:1},{name:'Собирательство',level:1},{name:'Боевые навыки',level:1}],
   };
   if (skillSets[worldId]) charState.skills = skillSets[worldId];
 }
 
 function setupWorld(d){
-  if (d.worldTheme) document.body.classList.add('theme-'+d.worldTheme);
+  if (d.worldTheme) {
+    document.body.classList.add('theme-'+d.worldTheme);
+    state.worldId = d.worldTheme;
+    // Update MP label in sidebar
+    const mpCfg = WORLD_MP_CONFIG[d.worldTheme] || WORLD_MP_CONFIG.default;
+    const mpLbl = document.getElementById('mp-label');
+    if (mpLbl) mpLbl.textContent = mpCfg.label;
+  }
   document.getElementById('game-title').textContent    = d.worldTitle    ||'Врата Миров';
   document.getElementById('game-subtitle').textContent = d.worldSubtitle ||'Твоё приключение';
   const barTitle = document.getElementById('bar-title');
@@ -456,6 +496,7 @@ async function saveProgress(){
 function buildSystemPrompt(){
   const base = state.worldPrompt || 'Ты — рассказчик, ведущий приключение.';
   const hp=charState.hp, mp=charState.mp, xp=charState.xp;
+  const mpCfg = WORLD_MP_CONFIG[state.worldId] || WORLD_MP_CONFIG.default;
   const curXP = xp.cur;
 
   const statsEntries = Object.entries(charState.stats);
@@ -473,7 +514,7 @@ function buildSystemPrompt(){
   return base + nakazBlock + `
 
 ═══ СОСТОЯНИЕ ПЕРСОНАЖА ═══
-HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${xp.max} | Золото: ${charState.gold}
+HP: ${hp.cur}/${hp.max} | ${mpCfg.label}: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${xp.max} | Золото: ${charState.gold}
 Характеристики: ${statsStr}
 Навыки: ${skillsStr}
 Инвентарь: ${invStr}
@@ -500,7 +541,7 @@ HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${x
 - Опыт начисляется системой автоматически. НЕ включай xp, xp_add в DATA никогда.
 - Урон от врагов: hp -5 до -20. HP не ниже 1.
 - Золото НИКОГДА не может быть меньше 0. Если у игрока недостаточно золота для покупки — откажи в покупке в тексте, не трать золото, не включай gold в DATA.
-- mp < 10 — магические навыки недоступны, упоминай это
+- ${mpCfg.mechanic}
 
 ═══ ФОРМАТ ОТВЕТА (строго!) ═══
 
