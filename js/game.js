@@ -295,9 +295,10 @@ function syncMobilePanels(){
   // Inventory
   const igm = document.getElementById('inv-grid-m');
   if(igm){
-    const cells = 8;
+    // Show all items + 2 empty slots as visual padding; horizontal scroll handles overflow
+    const showCount = Math.max(8, charState.inventory.length + 2);
     let h='';
-    for(let i=0;i<cells;i++){
+    for(let i=0;i<showCount;i++){
       const item=charState.inventory[i];
       if(item) h+=`<div class="inv-cell has-item" data-item-name="${(item.name||'').replace(/"/g,'&quot;')}" data-item-desc="${(item.desc||'').replace(/"/g,'&quot;')}">${item.icon||'📦'}${item.qty>1?`<span class="item-qty">${item.qty}</span>`:''}</div>`;
       else h+=`<div class="inv-cell"></div>`;
@@ -1062,41 +1063,8 @@ function updatePixelArt() {
 // Начальный рендер пустых панелей
 renderAllPanels();
 
-// ══ МОБАЙЛ: свайп для шторки характеристик ══
-(function initMobileDrawer(){
-  const handle = document.getElementById('mobile-inv-handle');
-  const drawer = document.getElementById('mobile-stats-drawer');
-  if (!handle || !drawer) return;
-
-  let startY = 0, isDragging = false, isOpen = false;
-
-  function open()  { drawer.classList.add('open');    isOpen = true;  }
-  function close() { drawer.classList.remove('open'); isOpen = false; }
-  function toggle(){ isOpen ? close() : open(); }
-
-  // Tap на хэндл = toggle
-  handle.addEventListener('click', toggle);
-
-  // Touch swipe
-  handle.addEventListener('touchstart', e => {
-    startY = e.touches[0].clientY;
-    isDragging = true;
-  }, { passive: true });
-
-  document.addEventListener('touchend', e => {
-    if (!isDragging) return;
-    isDragging = false;
-    const dy = startY - e.changedTouches[0].clientY;
-    if (dy > 30)  open();   // свайп вверх
-    if (dy < -30) close();  // свайп вниз
-  }, { passive: true });
-
-  // Синхронизируем при ресайзе
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 860) close();
-    syncMobilePanels();
-  });
-})();
+// ══ МОБАЙЛ: панель всегда открыта, синхронизация при ресайзе ══
+window.addEventListener('resize', syncMobilePanels);
 
 // Экспорт в window для onclick
 window.openNakazy  = openNakazy;
