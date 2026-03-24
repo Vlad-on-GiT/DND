@@ -380,12 +380,14 @@ HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${m
 Инвентарь: ${invStr}
 Экипировка: ${equipStr}
 
-КАК ПИСАТЬ ТЕКСТ — читать должно быть интересно и легко:
-- Каждая мысль = отдельный абзац через \\n\\n. Макс 2-3 предложения в абзаце.
+КАК ПИСАТЬ ТЕКСТ — это литературная RPG, пиши атмосферно и подробно:
+- Каждый ход = 3-6 абзацев. Разделяй через \\n\\n, 2-3 предложения в абзаце.
+- Открывай сцену с деталей мира: запахи, звуки, свет, ощущения — читатель должен оказаться там.
 - Диалоги отдельным абзацем с тире: — Стой! — рычит стражник. 😤 — Я просто путник, — говоришь ты.
-- 2-4 эмодзи в тексте строго по смыслу: ⚔️ бой 💀 опасность 💰 деньги 🔥 магия 😤 злость 😏 хитрость 🍺 таверна
-- От второго лица, сразу к делу, не пересказывай выбор игрока.
-- Текст живой и динамичный — не книжный, не сухой.
+- 3-5 эмодзи в тексте по смыслу: ⚔️ бой 💀 опасность 💰 деньги 🔥 магия 😤 злость 😏 хитрость 🍺 таверна 🌙 ночь
+- От второго лица — "ты видишь", "ты чувствуешь", "в твоих руках".
+- Не пересказывай выбор — сразу показывай последствия и новую сцену.
+- Показывай характеры NPC через действия и речь. Используй напряжение: недосказанность, угрозу, тайну.
 
 МЕХАНИКА DnD — СТРОГО ОБЯЗАТЕЛЬНО:
 
@@ -488,13 +490,12 @@ async function askDM(userMessage){
   showTyping(true); setActionZone('');
 
   try {
-    // ── ЗАПРОС 1: получаем структурированный JSON ──
+    // ── ЕДИНСТВЕННЫЙ ЗАПРОС к Gemini 2.5 Flash ──
     const resp1 = await fetch('https://dnd-proxy.vercel.app/api/proxy',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        
-        max_tokens:1200,
+        max_tokens:2000,
         system:buildSystemPrompt(),
         messages:state.history
       })
@@ -512,58 +513,14 @@ async function askDM(userMessage){
       showTyping(false); state.locked=false;
       setTimeout(()=>askDM(null),1500); return;
     }
-    // Если модель не дала actions — принудительно просим продолжить с кубиком или выбором
+    // Если модель не дала actions — принудительно просим продолжить
     if (parsed.type==='choice' && (!parsed.actions || parsed.actions.length===0)) {
       parsed.actions = ['▶️ Продолжить...'];
     }
 
-    // ── ЗАПРОС 2: переписываем story в живой формат ──
-    // Формируем контекст для редактора
-    const invAdded  = parsed.char_update?.inventory_add  || [];
-    const goldDelta = (parsed.char_update?.gold ?? charState.gold) - charState.gold;
-    const invBlock  = invAdded.length
-      ? '\\n\\nНайдено в сцене:\\n' + invAdded.map(i=>`${i.icon||'📦'} ${i.name} — ${i.desc||''}`).join('\\n')
-      : '';
-    const goldBlock = goldDelta > 0
-      ? `\\n\\n💰 Золото +${goldDelta} (итого ${(parsed.char_update?.gold||charState.gold)})`
-      : '';
-
-    const rewritePrompt = `Ты — литературный редактор текстовой RPG. Перепиши текст сцены.
-
-ПРАВИЛА:
-1. НЕ начинай с имени персонажа. Сразу — действие, ощущения, мир вокруг.
-2. Абзацы по 1-2 предложения, разделены одной пустой строкой.
-3. Диалоги отдельной строкой: — Реплика, — говорит персонаж.
-4. 2-3 эмодзи по смыслу в тексте.
-5. От второго лица ("ты видишь", "в руках").
-6. Живой и кинематографичный стиль.
-7. НЕ добавляй блоки "Найдено:", "Золото:", "У тебя есть выбор:" — это делается отдельно.
-8. НЕ перечисляй варианты действий в тексте — только повествование.
-
-ИСХОДНЫЙ ТЕКСТ:
-${parsed.story}${invBlock}${goldBlock}
-
-Верни ТОЛЬКО переписанный текст без кавычек и пояснений.`;
-
-    const resp2 = await fetch('https://dnd-proxy.vercel.app/api/proxy',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        
-        max_tokens:800,
-        system:'Ты литературный редактор RPG. Возвращай только переписанный текст.',
-        messages:[{role:'user',content:rewritePrompt}]
-      })
-    });
-    const data2   = await resp2.json();
-    const rewritten = (data2.content?.[0]?.text||'').trim();
-
-    // Используем переписанный текст если он не пустой, иначе оригинал
-    const finalStory = rewritten.length > 20 ? rewritten : parsed.story;
-
     state.history.push({role:'assistant',content:raw1});
     showTyping(false);
-    addDMMessage(finalStory);
+    addDMMessage(parsed.story);
     if(parsed.char_update) applyCharUpdate(parsed.char_update);
     renderActions(parsed);
     saveProgress();
