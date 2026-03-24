@@ -144,7 +144,11 @@ function initCharForWorld(d) {
   // Начальный стартовый набор из инвентаря
   if (d.startKit) {
     charState.gold = d.startKit.gold||0;
-    charState.inventory = (d.startKit.items||[]).map(name=>({name,icon:'📦',qty:1,desc:''}));
+    charState.inventory = (d.startKit.items||[]).map(item=>{
+      // items can be objects {name,icon,desc,qty} or legacy strings
+      if (typeof item === 'string') return {name:item, icon:'📦', qty:1, desc:''};
+      return {name:item.name||'?', icon:item.icon||'📦', qty:item.qty||1, desc:item.desc||''};
+    });
   }
   // Подбираем статы под мир
   const worldId = d.worldTheme||'';
