@@ -10,7 +10,7 @@ body.theme-morrowind{--bg:#1a1410;--bg-mid:#221c15;--bg-card:rgba(40,30,18,0.92)
 body.theme-lotr{--bg:#0c1208;--bg-mid:#121a0d;--bg-card:rgba(15,24,10,0.92);--accent:#6a9a3a;--accent2:#8abf52;--accent-glow:#aada70;--text:#e8f0d8;--text-dim:#a8c080;--border:rgba(100,160,50,0.28);--glow1:rgba(80,140,40,0.18);--glow2:rgba(40,80,20,0.12);--glow3:rgba(60,100,30,0.09);--font-title:'IM Fell English',serif;--font-body:'Crimson Pro',serif;}
 body.theme-hp{--bg:#09071a;--bg-mid:#0f0d22;--bg-card:rgba(16,12,36,0.93);--accent:#8b5cf6;--accent2:#a78bfa;--accent-glow:#c4b5fd;--text:#ede9fe;--text-dim:#a78bfa;--border:rgba(139,92,246,0.28);--glow1:rgba(139,92,246,0.20);--glow2:rgba(88,28,220,0.14);--glow3:rgba(60,20,160,0.10);--font-title:'Cinzel',serif;--font-body:'Raleway',sans-serif;}
 body.theme-witcher{--bg:#0f0c08;--bg-mid:#181410;--bg-card:rgba(24,18,10,0.93);--accent:#c8a94a;--accent2:#e0c870;--accent-glow:#f0d880;--text:#e8e0c8;--text-dim:#b8a880;--border:rgba(200,169,74,0.28);--glow1:rgba(180,140,40,0.18);--glow2:rgba(100,80,20,0.12);--glow3:rgba(60,40,10,0.10);--font-title:'IM Fell English',serif;--font-body:'Crimson Pro',serif;}
-body.theme-starwars{--bg:#02040a;--bg-mid:#050810;--bg-card:rgba(4,8,20,0.95);--accent:#00aaff;--accent2:#40c8ff;--accent-glow:#80e0ff;--text:#d0eeff;--text-dim:#6090b0;--border:rgba(0,150,255,0.25);--glow1:rgba(0,120,255,0.16);--glow2:rgba(0,60,160,0.12);--glow3:rgba(0,30,100,0.09);--font-title:'Orbitron',sans-serif;--font-body:'Raleway',sans-serif;}
+body.theme-starwars{--bg:#06050a;--bg-mid:#0d0b12;--bg-card:rgba(10,8,16,0.96);--accent:#c8972a;--accent2:#e8b84a;--accent-glow:#f5d070;--text:#f0e6c8;--text-dim:#9a8860;--border:rgba(200,151,42,0.28);--glow1:rgba(200,151,42,0.16);--glow2:rgba(140,80,20,0.12);--glow3:rgba(80,40,10,0.09);--font-title:'Cinzel',serif;--font-body:'Raleway',sans-serif;}
 body.theme-lego{--bg:#1a0a00;--bg-mid:#221000;--bg-card:rgba(36,16,0,0.93);--accent:#f7c200;--accent2:#ff6600;--accent-glow:#ffdd44;--text:#fff8e0;--text-dim:#d4a840;--border:rgba(247,194,0,0.32);--glow1:rgba(255,180,0,0.20);--glow2:rgba(255,100,0,0.14);--glow3:rgba(200,80,0,0.10);--font-title:'Special Elite',cursive;--font-body:'Raleway',sans-serif;}
 body.theme-alice{--bg:#07041a;--bg-mid:#0c0820;--bg-card:rgba(16,8,32,0.94);--accent:#e040fb;--accent2:#ea80fc;--accent-glow:#f3b8ff;--text:#fce4ff;--text-dim:#c880e0;--border:rgba(220,60,250,0.28);--glow1:rgba(200,40,240,0.18);--glow2:rgba(100,0,160,0.14);--glow3:rgba(60,0,120,0.10);--font-title:'Caveat',cursive;--font-body:'Raleway',sans-serif;}
 body.theme-stardew{--bg:#0a1608;--bg-mid:#101e0e;--bg-card:rgba(12,22,10,0.94);--accent:#7bc67e;--accent2:#a5d6a7;--accent-glow:#c8e6c9;--text:#e8f5e9;--text-dim:#81c784;--border:rgba(100,200,100,0.28);--glow1:rgba(80,180,80,0.18);--glow2:rgba(40,120,40,0.12);--glow3:rgba(20,80,20,0.10);--font-title:'Caveat',cursive;--font-body:'Raleway',sans-serif;}
@@ -476,11 +476,12 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
 
 /* Фильтры свечения через SVG filter (работает как glow без blur) */
 body.theme-starwars {
+  --sw-gold:  #c8972a;
+  --sw-gold2: #f5d070;
   --sw-blue:  #00aaff;
   --sw-blue2: #44ccff;
-  --sw-red:   #ff2222;
+  --sw-red:   #cc1111;
   --sw-green: #00ff66;
-  --sw-yellow:#ffcc00;
 }
 
 /* Световые мечи — декоративные линии по краям контейнера */
@@ -490,12 +491,12 @@ body.theme-starwars .container::before {
   top: 0; left: -3px;
   width: 3px;
   height: 100%;
-  background: var(--sw-blue);
+  background: var(--sw-gold);
   box-shadow:
-    0 0 4px  var(--sw-blue),
-    0 0 10px var(--sw-blue),
-    0 0 20px var(--sw-blue2),
-    0 0 40px rgba(0,170,255,0.3);
+    0 0 4px  var(--sw-gold),
+    0 0 10px var(--sw-gold),
+    0 0 22px var(--sw-gold2),
+    0 0 44px rgba(200,151,42,0.3);
   animation: sw-saber-pulse 3s ease-in-out infinite;
   border-radius: 2px;
 }
@@ -506,8 +507,8 @@ body.theme-starwars #left-panel::after {
   top: 48px;
   width: 2px;
   height: calc(100vh - 48px);
-  background: rgba(0,150,255,0.25);
-  box-shadow: 0 0 6px rgba(0,150,255,0.4), 0 0 16px rgba(0,150,255,0.2);
+  background: rgba(200,151,42,0.20);
+  box-shadow: 0 0 6px rgba(200,151,42,0.3), 0 0 16px rgba(180,120,20,0.15);
   pointer-events: none;
   animation: sw-saber-pulse 4s ease-in-out infinite 1s;
 }
@@ -515,25 +516,27 @@ body.theme-starwars #left-panel::after  { left: 258px; }
 body.theme-starwars #right-panel::after { right: 258px; }
 
 @keyframes sw-saber-pulse {
-  0%,100% { opacity: 0.7; box-shadow: 0 0 4px var(--sw-blue), 0 0 12px var(--sw-blue), 0 0 24px rgba(0,170,255,0.25); }
-  50%      { opacity: 1;   box-shadow: 0 0 6px var(--sw-blue), 0 0 20px var(--sw-blue2), 0 0 40px rgba(0,200,255,0.5), 0 0 60px rgba(0,120,255,0.2); }
+  0%,100% { opacity: 0.6; box-shadow: 0 0 4px var(--sw-gold), 0 0 10px var(--sw-gold), 0 0 20px rgba(200,151,42,0.2); }
+  50%      { opacity: 1;   box-shadow: 0 0 6px var(--sw-gold), 0 0 18px var(--sw-gold2), 0 0 36px rgba(220,180,50,0.5), 0 0 60px rgba(180,120,20,0.2); }
 }
 
 /* Неон на заголовках панелей */
 body.theme-starwars .panel-header-title {
+  font-family: 'Cinzel', serif;
+  color: var(--sw-gold2);
   text-shadow:
-    0 0 6px  rgba(0,170,255,0.8),
-    0 0 14px rgba(0,150,255,0.5);
+    0 0 6px  rgba(200,151,42,0.8),
+    0 0 14px rgba(180,120,20,0.5);
   letter-spacing: 0.12em;
 }
 
 /* Неон на значениях характеристик */
 body.theme-starwars .stat-item-val {
+  color: var(--sw-gold2);
   text-shadow:
-    0 0 8px  rgba(0,200,255,0.9),
-    0 0 20px rgba(0,150,255,0.6),
-    0 0 40px rgba(0,100,255,0.3);
-  color: #80e0ff;
+    0 0 8px  rgba(200,151,42,0.9),
+    0 0 20px rgba(180,120,20,0.6),
+    0 0 40px rgba(140,80,10,0.3);
 }
 
 /* Неон на полосках HP/MP/XP */
@@ -553,25 +556,23 @@ body.theme-starwars .stat-bar-fill.mp {
 
 /* Точки навыков в SW — светящиеся */
 body.theme-starwars .skill-dot.filled {
-  background: var(--sw-blue);
-  box-shadow: 0 0 4px var(--sw-blue), 0 0 8px rgba(0,170,255,0.6);
-  border-color: var(--sw-blue2);
+  background: var(--sw-gold);
+  box-shadow: 0 0 4px var(--sw-gold), 0 0 8px rgba(200,151,42,0.6);
+  border-color: var(--sw-gold2);
 }
 
 /* Кнопки действий — голограмма с неоновой границей */
 body.theme-starwars .action-btn {
-  border-color: rgba(0,170,255,0.4);
-  box-shadow:
-    inset 0 0 12px rgba(0,100,200,0.06),
-    0 0 8px rgba(0,100,200,0.12);
+  border-color: rgba(200,151,42,0.3);
+  box-shadow: inset 0 0 12px rgba(160,100,10,0.05), 0 0 6px rgba(160,100,10,0.08);
 }
 body.theme-starwars .action-btn:hover {
-  border-color: var(--sw-blue);
+  border-color: var(--sw-gold);
   box-shadow:
-    inset 0 0 16px rgba(0,150,255,0.12),
-    0 0 16px rgba(0,170,255,0.4),
-    0 0 32px rgba(0,100,255,0.2);
-  color: #c0eeff;
+    inset 0 0 16px rgba(200,151,42,0.10),
+    0 0 16px rgba(200,151,42,0.35),
+    0 0 32px rgba(160,100,10,0.2);
+  color: var(--sw-gold2);
 }
 
 /* Блики световых мечей на DM-блоках */
@@ -584,18 +585,20 @@ body.theme-starwars .dm-block {
 
 /* Заголовок шапки — неоновое свечение */
 body.theme-starwars #bar-title {
+  font-family: 'Cinzel', serif !important;
+  letter-spacing: 0.1em;
   text-shadow:
-    0 0 10px rgba(0,200,255,0.9),
-    0 0 25px rgba(0,150,255,0.6),
-    0 0 50px rgba(0,100,255,0.3);
+    0 0 10px rgba(200,151,42,0.9),
+    0 0 25px rgba(180,120,20,0.6),
+    0 0 50px rgba(140,80,10,0.3);
 }
 
 /* Золото / очки — жёлтый неон */
 body.theme-starwars .gold-val,
 body.theme-starwars #gold-val,
 body.theme-starwars #gold-val-m {
-  color: var(--sw-yellow);
-  text-shadow: 0 0 6px var(--sw-yellow), 0 0 14px rgba(255,200,0,0.5);
+  color: var(--sw-gold2);
+  text-shadow: 0 0 6px var(--sw-gold2), 0 0 14px rgba(200,151,42,0.5);
 }
 
 /* Dice button — красный неон Ситхов */
@@ -614,24 +617,24 @@ body.theme-starwars .dice-btn:hover {
 
 /* Число броска кубика — жёлтый световой меч */
 body.theme-starwars .roll-number {
-  color: var(--sw-yellow);
+  color: var(--sw-gold2);
   text-shadow:
-    0 0 10px var(--sw-yellow),
-    0 0 25px rgba(255,200,0,0.7),
-    0 0 50px rgba(255,150,0,0.4);
+    0 0 10px var(--sw-gold2),
+    0 0 25px rgba(200,151,42,0.7),
+    0 0 50px rgba(160,100,10,0.4);
 }
 
 /* Уровень персонажа */
 body.theme-starwars .portrait-level {
-  color: var(--sw-blue2);
-  text-shadow: 0 0 8px var(--sw-blue);
+  color: var(--sw-gold2);
+  text-shadow: 0 0 8px var(--sw-gold);
 }
 
 /* Мобайл — световой меч снизу инвентаря */
 @media(max-width:860px) {
   body.theme-starwars #mobile-inv-handle {
-    border-top: 2px solid var(--sw-blue);
-    box-shadow: 0 -4px 16px rgba(0,150,255,0.3), 0 -1px 4px rgba(0,200,255,0.5);
+    border-top: 2px solid var(--sw-gold);
+    box-shadow: 0 -4px 16px rgba(200,151,42,0.25), 0 -1px 4px rgba(220,180,50,0.4);
   }
 }
 
@@ -641,6 +644,15 @@ body.theme-starwars .portrait-level {
    ══════════════════════════════════════ */
 
 /* Звёздное поле — псевдоэлементы на body */
+/* SW: Add subtle gold texture overlay */
+body.theme-starwars .side-panel .panel-card {
+  border-color: rgba(200,151,42,0.18);
+  background: linear-gradient(160deg, rgba(10,8,16,0.97) 0%, rgba(16,12,6,0.95) 100%);
+}
+body.theme-starwars .panel-header {
+  border-bottom-color: rgba(200,151,42,0.15);
+}
+
 body.theme-starwars::after {
   content: '';
   position: fixed;
@@ -695,13 +707,13 @@ body.theme-starwars .game-layout::before {
 
 /* Световой меч — декор на DM-блоках в теме SW */
 body.theme-starwars .dm-block {
-  border-left-color: #00aaff;
-  box-shadow: inset 0 0 20px rgba(0,100,200,0.06), 0 0 12px rgba(0,100,255,0.08);
+  border-left-color: var(--sw-gold);
+  box-shadow: inset 0 0 20px rgba(160,100,10,0.06), -2px 0 16px rgba(200,151,42,0.2);
 }
 body.theme-starwars .dm-block::before {
-  content: '⚡';
-  color: #00aaff;
-  text-shadow: 0 0 8px #00aaff;
+  content: '✦';
+  color: var(--sw-gold);
+  text-shadow: 0 0 8px rgba(200,151,42,0.8);
 }
 
 /* Кнопки действий в SW теме — голограмма */
@@ -726,24 +738,24 @@ body.theme-starwars .action-btn::after {
 
 /* Полоска опыта в SW — синяя с пульсацией */
 body.theme-starwars .stat-bar-fill.xp {
-  background: linear-gradient(90deg, #003080, #00aaff);
-  box-shadow: 0 0 6px rgba(0,170,255,0.5);
+  background: linear-gradient(90deg, #4a2e06, var(--sw-gold));
+  box-shadow: 0 0 6px rgba(200,151,42,0.5);
   animation: sw-xp-pulse 3s ease-in-out infinite;
 }
 @keyframes sw-xp-pulse {
-  0%,100% { box-shadow: 0 0 4px rgba(0,170,255,0.4); }
-  50%      { box-shadow: 0 0 10px rgba(0,170,255,0.8); }
+  0%,100% { box-shadow: 0 0 4px rgba(200,151,42,0.4); }
+  50%      { box-shadow: 0 0 12px rgba(200,151,42,0.9), 0 0 24px rgba(180,120,20,0.4); }
 }
 
 /* Голокрон-анимация на портрете в SW теме */
 body.theme-starwars #portrait-canvas,
 body.theme-starwars #portrait-canvas-m {
-  filter: drop-shadow(0 0 6px rgba(0,170,255,0.7));
+  filter: drop-shadow(0 0 5px rgba(200,151,42,0.7));
   animation: sw-holo 4s ease-in-out infinite;
 }
 @keyframes sw-holo {
-  0%,100% { filter: drop-shadow(0 0 4px rgba(0,170,255,0.5)); opacity: 1; }
-  50%     { filter: drop-shadow(0 0 10px rgba(0,200,255,0.9)); opacity: 0.92; }
+  0%,100% { filter: drop-shadow(0 0 4px rgba(200,151,42,0.5)); opacity: 1; }
+  50%     { filter: drop-shadow(0 0 10px rgba(230,184,74,0.9)); opacity: 0.92; }
 }
 
 /* Текст характеристик в SW теме — цифры светятся */
