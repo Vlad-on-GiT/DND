@@ -481,51 +481,58 @@ function rollDice(notation){
 function parseGeminiResponse(text) {
   const result = { story:'', type:'choice', actions:[], char_update:{} };
 
-  // Извлекаем STORY
-  const storyMatch = text.match(/STORY\s*\n([\s\S]*?)\nEND_STORY/);
-  result.story = storyMatch ? storyMatch[1].trim() : text.split('TYPE=')[0].trim();
+  // Извлекаем STORY — ищем между STORY и END_STORY (нечувствительно к пробелам/переносам)
+  const storyMatch = text.match(/STORY[ \t]*\r?\n([\s\S]*?)\r?\nEND_STORY/i);
+  if (storyMatch) {
+    result.story = storyMatch[1].trim();
+  } else {
+    // Fallback: всё до первого маркера TYPE= или END_STORY
+    result.story = text
+      .replace(/END_STORY[\s\S]*/i, '')
+      .replace(/TYPE=[\s\S]*/i, '')
+      .trim();
+    if (!result.story) result.story = text.trim();
+  }
+
+  // Убираем END_STORY если вдруг попал в story
+  result.story = result.story.replace(/\bEND_STORY\b/gi, '').trim();
 
   // Тип
-  if (/TYPE=DICE/i.test(text)) result.type = 'dice';
-  else result.type = 'choice';
+  result.type = /TYPE=DICE/i.test(text) ? 'dice' : 'choice';
 
   // Кубик
   if (result.type === 'dice') {
-    const diceMatch = text.match(/DICE=\{([^}]+)\}/);
-    if (diceMatch) {
-      try {
-        const d = diceMatch[1];
-        const notationM = d.match(/notation[:\s]+(\S+)/);
-        const reasonM   = d.match(/reason[:\s]+(.+)/);
-        result.dice = {
-          notation: notationM ? notationM[1].replace(/,$/,'') : '1d20',
-          reason:   reasonM   ? reasonM[1].trim() : 'Бросок'
-        };
-      } catch { result.dice = {notation:'1d20', reason:'Бросок'}; }
+    const diceM = text.match(/DICE=\{([^}]+)\}/i);
+    if (diceM) {
+      const d = diceM[1];
+      const notM = d.match(/notation[:\s]+([\w+\-]+)/i);
+      const resM = d.match(/reason[:\s]+([^,}]+)/i);
+      result.dice = {
+        notation: notM ? notM[1].trim() : '1d20',
+        reason:   resM ? resM[1].trim() : 'Бросок'
+      };
     } else {
-      result.dice = {notation:'1d20', reason:'Бросок'};
+      result.dice = { notation:'1d20', reason:'Бросок' };
     }
   }
 
-  // Действия
-  const actionsMatch = text.match(/ACTIONS=(.+)/);
-  if (actionsMatch) {
-    result.actions = actionsMatch[1].split('|').map(a=>a.trim()).filter(Boolean);
+  // Действия — поддерживаем | и newline как разделители
+  const actM = text.match(/ACTIONS=(.+)/i);
+  if (actM) {
+    result.actions = actM[1].split(/[|\n]/).map(a=>a.trim()).filter(Boolean);
   }
 
   // DATA — char_update
-  const dataMatch = text.match(/DATA=(\{[\s\S]*?\})(?:\s|$)/);
-  if (dataMatch) {
-    try { result.char_update = JSON.parse(dataMatch[1]); } catch {}
+  const dataM = text.match(/DATA=(\{[\s\S]*?\})(?:[\s\n]|$)/i);
+  if (dataM) {
+    try { result.char_update = JSON.parse(dataM[1]); } catch {}
   }
 
-  // Если вообще ничего не распарсилось — весь текст как story
-  if (!result.story) result.story = text;
-  if (result.type==='choice' && result.actions.length===0) result.actions = ['▶️ Продолжить...'];
+  if (result.type==='choice' && result.actions.length===0) {
+    result.actions = ['▶️ Продолжить...'];
+  }
   return result;
 }
-
-const parsed = parseGeminiResponse(raw1);
 
 async function askDM(userMessage){
   if(state.locked) return;
