@@ -218,6 +218,9 @@ document.getElementById('nakazы-modal').addEventListener('click', function(e){
 
 function renderAllPanels(){
   renderBars(); renderStats(); renderSkills(); renderInventory();
+  // Синхронизируем уровень в панели "Герой"
+  const lvlEl = document.getElementById('portrait-level');
+  if (lvlEl) lvlEl.textContent = 'Ур. ' + playerLevel;
 }
 
 function renderBars(){
@@ -298,14 +301,31 @@ function applyCharUpdate(update){
   if(update.inventory_add){ update.inventory_add.forEach(item=>{ const ex=charState.inventory.find(i=>i.name===item.name); if(ex) ex.qty=(ex.qty||1)+(item.qty||1); else charState.inventory.push({...item,qty:item.qty||1}); }); changed=true; }
 
   if(update.inventory_remove){
-    update.inventory_remove.forEach(name=>{
-      let idx = charState.inventory.findIndex(i => i.name === name);
-      if (idx < 0) idx = charState.inventory.findIndex(i => i.name.toLowerCase().trim() === (name||'').toLowerCase().trim());
+    update.inventory_remove.forEach(entry=>{
+      // entry может быть строкой "Название" или объектом {name, qty}
+      const removeName = typeof entry === 'string' ? entry : (entry.name || '');
+      const removeQty  = typeof entry === 'object' && entry.qty ? entry.qty : null; // null = удалить весь стек
+      // Поиск: точный → регистронезависимый → по подстроке (для "5 семян репы" vs "семена репы")
+      let idx = charState.inventory.findIndex(i => i.name === removeName);
+      if (idx < 0) idx = charState.inventory.findIndex(i => i.name.toLowerCase().trim() === removeName.toLowerCase().trim());
+      if (idx < 0) {
+        // fuzzy: ищем предмет имя которого содержится в запросе или наоборот
+        idx = charState.inventory.findIndex(i => {
+          const a = i.name.toLowerCase(), b = removeName.toLowerCase();
+          return a.includes(b) || b.includes(a);
+        });
+      }
       if (idx >= 0) {
-        console.log('[DM] inventory_remove:', charState.inventory[idx].name);
-        charState.inventory.splice(idx, 1);
+        const item = charState.inventory[idx];
+        if (removeQty && item.qty > removeQty) {
+          item.qty -= removeQty;
+          console.log('[DM] inventory_remove qty:', removeQty, 'from', item.name, '-> remaining:', item.qty);
+        } else {
+          console.log('[DM] inventory_remove (full stack):', item.name);
+          charState.inventory.splice(idx, 1);
+        }
       } else {
-        console.warn('[DM] inventory_remove: item not found:', name, '| inventory:', charState.inventory.map(i=>i.name));
+        console.warn('[DM] inventory_remove: item not found:', removeName, '| inventory:', charState.inventory.map(i=>i.name));
       }
     });
     changed=true;
@@ -486,7 +506,14 @@ hp, mp, gold — числа (только изменившиеся)
 stats: {"Ловкость":13}
 skills: [{"name":"Скрытность","level":2}]
 inventory_add: [{"name":"Зелье","icon":"🧪","qty":1,"desc":"Лечит 20 HP"}]
-inventory_remove: ["название"]
+inventory_remove: ["точное название предмета как в инвентаре"] или [{"name":"название","qty":3}] если тратится часть
+
+ПРАВИЛА ИНВЕНТАРЯ (строго!):
+- Если игрок ТРАТИТ/ИСПОЛЬЗУЕТ предмет → inventory_remove ОБЯЗАТЕЛЕН
+- Если игрок ПОЛУЧАЕТ предмет → inventory_add ОБЯЗАТЕЛЕН
+- inventory_remove: используй ТОЧНОЕ название предмета из инвентаря игрока (см. список выше)
+- Нельзя одновременно add и remove одного и того же предмета
+- Если предмета нет в инвентаре — нельзя его использовать, напиши об этом в тексте
 
 ЗАПРЕЩЕНО: писать варианты действий в STORY.`
 }
