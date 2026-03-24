@@ -50,10 +50,12 @@ body.theme-witcher {
   --font-title:'IM Fell English',serif;--font-body:'Crimson Pro',serif;
 }
 body.theme-starwars {
-  --bg:#02040a;--bg-mid:#050810;--accent:#00aaff;--accent2:#40c8ff;--accent-glow:#80e0ff;
-  --text:#d0eeff;--text-dim:#6090b0;--card-bg:rgba(4,8,20,0.94);--border:rgba(0,150,255,0.28);
-  --glow1:rgba(0,120,255,0.18);--glow2:rgba(0,60,160,0.14);--glow3:rgba(0,30,100,0.10);
-  --font-title:'Orbitron',sans-serif;--font-body:'Raleway',sans-serif;
+  --bg:#06050a;--bg-mid:#0d0b12;
+  --accent:#c8972a;--accent2:#e8b84a;--accent-glow:#f5d070;
+  --text:#f0e6c8;--text-dim:#9a8860;
+  --card-bg:rgba(10,8,16,0.95);--border:rgba(200,151,42,0.30);
+  --glow1:rgba(200,151,42,0.16);--glow2:rgba(140,80,20,0.12);--glow3:rgba(80,40,10,0.09);
+  --font-title:'Cinzel',serif;--font-body:'Raleway',sans-serif;
 }
 body.theme-lego {
   --bg:#1a0a00;--bg-mid:#221000;--accent:#f7c200;--accent2:#ff6600;--accent-glow:#ffdd44;
@@ -319,6 +321,183 @@ body::before {
 }
 .btn-back:hover { border-color: var(--accent); color: var(--text); }
 
+/* ══ ГИПЕРПРОСТРАНСТВО — анимация смены темы ══ */
+#hyperspace-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  pointer-events: none;
+  background: radial-gradient(ellipse 20% 20% at 50% 50%, #ffffff 0%, transparent 100%);
+  opacity: 0;
+}
+#hyperspace-overlay.hyperspace-active {
+  pointer-events: all;
+}
+@keyframes hyperspace-in {
+  0%   { opacity: 0;   transform: scale(0.02); filter: brightness(1); }
+  15%  { opacity: 1;   transform: scale(0.1);  filter: brightness(4); }
+  40%  { opacity: 0.9; transform: scale(1);    filter: brightness(2); background: radial-gradient(ellipse 120% 8% at 50% 50%, rgba(255,255,255,0.9) 0%, rgba(200,180,100,0.3) 40%, transparent 70%); }
+  70%  { opacity: 0.5; transform: scale(1);    filter: brightness(1.2); background: radial-gradient(ellipse 200% 200% at 50% 50%, rgba(200,160,60,0.15) 0%, transparent 60%); }
+  100% { opacity: 0;   transform: scale(1);    filter: brightness(1); }
+}
+
+/* Линии гиперпространства (псевдоэлемент) */
+#hyperspace-overlay.hyperspace-active::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0%, transparent 49%,
+    rgba(255,255,220,0.6) 49.5%,
+    transparent 50%
+  ),
+  repeating-linear-gradient(
+    0deg,
+    transparent 0%, transparent 49%,
+    rgba(255,255,220,0.3) 49.5%,
+    transparent 50%
+  );
+  background-size: 4% 4%;
+  animation: hyperspace-lines 0.9s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes hyperspace-lines {
+  0%   { opacity: 0; transform: scale(0.05) scaleX(0.01); }
+  20%  { opacity: 1; transform: scale(1)    scaleX(8); }
+  60%  { opacity: 0.4; transform: scale(1)  scaleX(1); }
+  100% { opacity: 0; }
+}
+
+/* ══ ЗВЁЗДНЫЕ ВОЙНЫ — золотая тема меню (Jedi Survivor) ══ */
+
+/* Звёздный фон только для SW */
+body.theme-starwars::before {
+  background:
+    radial-gradient(ellipse 100% 60% at 50% 100%, rgba(200,140,30,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 10%,   rgba(180,100,20,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 45% at 10% 40%,   rgba(100,60,10,0.08)  0%, transparent 55%);
+}
+
+/* Золотые карточки миров в SW теме */
+body.theme-starwars .world-card {
+  border-color: rgba(200,151,42,0.25);
+  background: linear-gradient(160deg, rgba(12,10,18,0.97) 0%, rgba(20,15,8,0.95) 100%);
+}
+body.theme-starwars .world-card:hover {
+  border-color: rgba(200,151,42,0.6);
+  box-shadow: 0 0 20px rgba(200,151,42,0.2), 0 8px 30px rgba(0,0,0,0.6);
+  transform: translateY(-4px);
+}
+body.theme-starwars .world-card.selected {
+  border-color: var(--accent-glow);
+  box-shadow: 0 0 30px rgba(200,151,42,0.35), 0 0 60px rgba(180,120,20,0.15);
+  background: linear-gradient(160deg, rgba(18,14,6,0.97) 0%, rgba(30,22,8,0.96) 100%);
+}
+body.theme-starwars .world-card.selected::after {
+  background: radial-gradient(ellipse at 50% 0%, rgba(200,151,42,0.15) 0%, transparent 70%);
+  opacity: 1;
+}
+
+/* Золотые орнаменты — уголки на выбранной карточке SW */
+body.theme-starwars .world-card.selected::before {
+  content: '';
+  position: absolute; inset: 4px;
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg,
+    rgba(200,151,42,0.7) 0%, transparent 30%,
+    transparent 70%, rgba(200,151,42,0.7) 100%) 1;
+  pointer-events: none;
+}
+
+/* Заголовок главной страницы в SW теме */
+body.theme-starwars .home-title {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.12em;
+  background: linear-gradient(180deg, #f5d070 0%, #c8972a 50%, #8a5e10 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 20px rgba(200,151,42,0.4));
+}
+
+/* Кнопки в SW теме — золотые */
+body.theme-starwars .btn-main {
+  background: linear-gradient(135deg, rgba(200,151,42,0.25) 0%, rgba(140,80,10,0.15) 100%);
+  border-color: var(--accent);
+  color: var(--accent-glow);
+  box-shadow: 0 0 20px rgba(200,151,42,0.15), inset 0 0 20px rgba(200,151,42,0.05);
+}
+body.theme-starwars .btn-main:hover {
+  box-shadow: 0 0 35px rgba(200,151,42,0.4), inset 0 0 20px rgba(200,151,42,0.1);
+  transform: scale(1.03);
+}
+body.theme-starwars .btn-next {
+  border-color: var(--accent);
+  color: var(--accent-glow);
+  background: linear-gradient(135deg, rgba(200,151,42,0.2) 0%, rgba(140,80,10,0.12) 100%);
+}
+body.theme-starwars .btn-next:hover {
+  box-shadow: 0 0 25px rgba(200,151,42,0.35);
+}
+
+/* Карточки персонажей и предысторий */
+body.theme-starwars .char-card,
+body.theme-starwars .backstory-card {
+  border-color: rgba(200,151,42,0.2);
+  background: linear-gradient(160deg, rgba(10,8,16,0.96) 0%, rgba(18,13,6,0.94) 100%);
+}
+body.theme-starwars .char-card.selected,
+body.theme-starwars .backstory-card.selected {
+  border-color: var(--accent);
+  background: linear-gradient(160deg, rgba(16,12,4,0.97) 0%, rgba(28,20,6,0.96) 100%);
+  box-shadow: 0 0 20px rgba(200,151,42,0.25);
+}
+body.theme-starwars .char-name,
+body.theme-starwars .backstory-title {
+  color: var(--accent2);
+}
+
+/* Верхняя строка в SW теме */
+body.theme-starwars .top-bar {
+  border-bottom-color: rgba(200,151,42,0.2);
+  background: linear-gradient(180deg, rgba(6,5,10,0.98) 0%, rgba(6,5,10,0.90) 100%);
+}
+body.theme-starwars .top-bar-title {
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 20px rgba(200,151,42,0.5);
+}
+
+/* Шаг-индикаторы */
+body.theme-starwars .step-dot.active {
+  background: var(--accent-glow);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+body.theme-starwars .step-dot.done { background: var(--accent); }
+
+/* Поле ввода имени */
+body.theme-starwars .field-input {
+  border-color: rgba(200,151,42,0.3);
+  background: rgba(10,8,16,0.8);
+}
+body.theme-starwars .field-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(200,151,42,0.15);
+}
+
+/* Декоративная золотая линия под заголовком страницы */
+body.theme-starwars .page-title {
+  position: relative;
+  padding-bottom: 12px;
+}
+body.theme-starwars .page-title::after {
+  content: '✦ ─────────────── ✦';
+  display: block;
+  font-size: 11px;
+  color: var(--accent);
+  opacity: 0.6;
+  letter-spacing: 0.2em;
+  margin-top: 8px;
+  text-align: center;
+}
+
 /* ══ ЗАГРУЗКА ══ */
 #auth-loading {
   position: fixed; inset: 0; z-index: 200;
@@ -330,6 +509,9 @@ body::before {
 </style>
 </head>
 <body>
+
+<!-- Оверлей гиперпространства -->
+<div id="hyperspace-overlay"></div>
 
 <div id="auth-loading"><div class="loading-emblem">🌐</div></div>
 
@@ -794,8 +976,6 @@ function renderWorldsGrid() {
   grid.innerHTML = WORLDS.map(w => `
     <div class="world-card ${sel.world?.id === w.id ? 'selected' : ''}"
          style="--world-color:${w.color || 'var(--accent)'}"
-         onmouseenter="previewTheme('${w.theme}')"
-         onmouseleave="previewTheme(sel.world?.theme || null)"
          onclick="selectWorld('${w.id}')">
       <div class="world-icon">${w.icon}</div>
       <div class="world-name">${w.name}</div>
@@ -809,13 +989,38 @@ window.previewTheme = function(themeId) {
 };
 
 window.selectWorld = function(id) {
-  sel.world = WORLDS.find(w => w.id === id);
+  const newWorld = WORLDS.find(w => w.id === id);
+  if (!newWorld) return;
+  const isChange = !sel.world || sel.world.id !== id;
+  sel.world = newWorld;
   sel.char = null; sel.backstory = null; sel.kit = null;
   renderWorldsGrid();
   document.getElementById('btn-world-next').disabled = false;
-  applyTheme(sel.world.theme);
   updateTopTitle(sel.world);
+  if (isChange) {
+    triggerHyperspace(sel.world.theme);
+  } else {
+    applyTheme(sel.world.theme);
+  }
 };
+
+function triggerHyperspace(themeId) {
+  const overlay = document.getElementById('hyperspace-overlay');
+  if (!overlay) { applyTheme(themeId); return; }
+  // Set the target theme colours as data attrs so CSS can read them
+  overlay.className = 'hyperspace-active';
+  overlay.dataset.theme = themeId || '';
+  // Apply theme IMMEDIATELY so background shifts under the overlay
+  applyTheme(themeId);
+  // Animation sequence: flash → stretch → fade
+  overlay.style.animation = 'none';
+  overlay.offsetHeight; // reflow
+  overlay.style.animation = 'hyperspace-in 0.9s cubic-bezier(0.4,0,0.2,1) forwards';
+  overlay.addEventListener('animationend', () => {
+    overlay.className = '';
+    overlay.style.animation = '';
+  }, { once: true });
+}
 
 // ══ ШАГ 2: ПЕРСОНАЖ ══
 const origShowPage = window.showPage;
