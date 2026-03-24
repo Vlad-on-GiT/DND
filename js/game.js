@@ -35,7 +35,6 @@ const charState = {
     {name:'Красноречие',level:1},{name:'Скрытность',level:1},
     {name:'Атака',level:1},{name:'Магия',level:1},{name:'Торговля',level:1},
   ],
-  equipment:{ helmet:null, armor:null, weapon:null, gloves:null, ring:null, ring2:null, boots:null },
   inventory:[], gold:0,
 };
 
@@ -215,7 +214,7 @@ document.getElementById('nakazы-modal').addEventListener('click', function(e){
 // ════════════════════════════════════════════
 
 function renderAllPanels(){
-  renderBars(); renderStats(); renderSkills(); renderEquipment(); renderInventory();
+  renderBars(); renderStats(); renderSkills(); renderInventory();
 }
 
 function renderBars(){
@@ -242,38 +241,6 @@ function renderSkills(){
       <span class="skill-name">${s.name}</span>
       <div class="skill-dots">${[1,2,3,4,5].map(i=>`<div class="skill-dot ${i<=s.level?'filled':''}"></div>`).join('')}</div>
     </div>`).join('');
-}
-
-function renderEquipment(){
-  const slots=['helmet','armor','weapon','gloves','ring','ring2','boots'];
-  slots.forEach(slot=>{
-    const item   = charState.equipment[slot];
-    const slotEl = document.getElementById('slot-'+slot);
-    if (!slotEl) return;
-    if (item){
-      slotEl.dataset.tipName = item.name||'Предмет';
-      slotEl.dataset.tipStat = item.stat||'';
-      slotEl.classList.add('equipped');
-      // Показываем иконку предмета поверх SVG если есть emoji
-      const inner = slotEl.querySelector('.equip-slot-inner');
-      if (inner && item.icon) {
-        let eIcon = inner.querySelector('.item-emoji-icon');
-        if (!eIcon) {
-          eIcon = document.createElement('div');
-          eIcon.className = 'item-emoji-icon';
-          eIcon.style.cssText = 'position:absolute;top:4px;right:4px;font-size:14px;line-height:1;';
-          inner.appendChild(eIcon);
-        }
-        eIcon.textContent = item.icon;
-      }
-    } else {
-      slotEl.dataset.tipName = 'Пусто';
-      slotEl.dataset.tipStat = '';
-      slotEl.classList.remove('equipped');
-      const inner = slotEl.querySelector('.equip-slot-inner');
-      if (inner) { const e = inner.querySelector('.item-emoji-icon'); if(e) e.remove(); }
-    }
-  });
 }
 
 function renderInventory(){
@@ -310,8 +277,6 @@ function applyCharUpdate(update){
   if(update.stats){ Object.assign(charState.stats,update.stats); changed=true; }
 
   if(update.skills){ update.skills.forEach(us=>{ const s=charState.skills.find(sk=>sk.name===us.name); if(s) s.level=Math.max(1,Math.min(5,us.level)); }); changed=true; }
-
-  if(update.equipment){ Object.entries(update.equipment).forEach(([slot,item])=>{ charState.equipment[slot]=item; }); changed=true; }
 
   if(update.inventory_add){ update.inventory_add.forEach(item=>{ const ex=charState.inventory.find(i=>i.name===item.name); if(ex) ex.qty=(ex.qty||1)+(item.qty||1); else charState.inventory.push({...item,qty:item.qty||1}); }); changed=true; }
 
@@ -362,61 +327,77 @@ async function saveProgress(){
 function buildSystemPrompt(){
   const base = state.worldPrompt || 'Ты — рассказчик, ведущий приключение.';
   const hp=charState.hp, mp=charState.mp, xp=charState.xp;
-  const statsStr  = Object.entries(charState.stats).map(([k,v])=>k+':'+v).join(', ');
-  const skillsStr = charState.skills.map(s=>s.name+'(ур.'+s.level+')').join(', ');
+  const curXP = xp.cur;
+
+  const statsEntries = Object.entries(charState.stats);
+  const statsStr  = statsEntries.map(([k,v])=>`${k}: ${v}`).join(' | ');
+  const skillsStr = charState.skills.map(s=>`${s.name} (ур.${s.level}/5)`).join(' | ');
   const invStr    = charState.inventory.map(i=>i.name+'x'+(i.qty||1)).join(', ')||'пусто';
-  const equipStr  = Object.entries(charState.equipment).filter(([,v])=>v).map(([k,v])=>k+':'+v.name).join(', ')||'пусто';
-  const curXP = xp.cur, maxXP = xp.max;
+
+  const topStat  = [...statsEntries].sort((a,b)=>b[1]-a[1])[0] || ['???', 10];
+  const topSkill = [...charState.skills].sort((a,b)=>b.level-a.level)[0] || {name:'???',level:1};
 
   const nakazBlock = state.nakazText
-    ? `\n\nПОЖЕЛАНИЯ ИГРОКА (учитывай в каждом ответе):\n${state.nakazText}`
+    ? `\n\nПОЖЕЛАНИЯ ИГРОКА (строго соблюдай):\n${state.nakazText}`
     : '';
+
   return base + nakazBlock + `
 
-СОСТОЯНИЕ ПЕРСОНАЖА:
-HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${maxXP} | Золото: ${charState.gold}
+═══ СОСТОЯНИЕ ПЕРСОНАЖА ═══
+HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${xp.max} | Золото: ${charState.gold}
 Характеристики: ${statsStr}
 Навыки: ${skillsStr}
 Инвентарь: ${invStr}
-Экипировка: ${equipStr}
+Сильная сторона: ${topStat[0]} (${topStat[1]}) и навык «${topSkill.name}» ур.${topSkill.level}
 
-КАК ПИСАТЬ — коротко и динамично:
-- 2-3 абзаца максимум, каждый 1-2 предложения
-- Больше диалогов с тире: — Реплика! — сказал NPC.
-- 2-3 эмодзи по смыслу. От второго лица. Сразу к действию.
+═══ КАК ХАРАКТЕРИСТИКИ И НАВЫКИ ВЛИЯЮТ НА ИГРУ ═══
+Характеристики — числа 1-20. Навыки — уровень 1-5. Это НЕ декорации — они меняют что происходит.
 
-МЕХАНИКА:
-- Рискованное действие = сначала бросок кубика (TYPE=DICE), потом результат
-- Начисляй xp каждый ход (абсолютное значение): обычная сцена +5-10, бой +20-50
+ПРАВИЛА (обязательны):
+1. Высокий стат (14+) = персонаж справляется без броска или с явным преимуществом. Напиши в тексте почему: «Твоя [стат] позволяет...»
+2. Низкий стат (7-) = персонаж заметно спотыкается. Отрази это в повествовании.
+3. При броске DICE указывай в reason: какой стат проверяется и порог успеха. Пример: «Проверка Ловкости — нужно 10+»
+4. Высокий проверяемый стат снижает порог на 2-3, низкий — повышает на 2-3.
+5. Навык «${topSkill.name}» ур.${topSkill.level} — давай игроку шанс применить его каждые 2-3 хода. При успехе: skills:[{"name":"${topSkill.name}","level":${Math.min(5, topSkill.level+1)}}] в DATA если это был сложный вызов.
+6. Называй характеристики и навыки персонажа по имени когда они релевантны.
+
+═══ КАК ПИСАТЬ ═══
+- 2-3 абзаца. От второго лица. Сразу к действию, без вступлений.
+- Диалоги с тире: — Реплика! — сказал NPC.
+- 2-3 эмодзи по смыслу.
+
+═══ МЕХАНИКА ═══
+- Рискованное действие где стат не гарантирует успех → TYPE=DICE
+- xp каждый ход: обычная сцена +5-10, бой +20-50, применение навыка +10-15
 - Урон от врагов: hp -5 до -20. HP не ниже 1.
+- mp < 10 — магические навыки недоступны, упоминай это
 
-ФОРМАТ ОТВЕТА — строго по шаблону, никаких отклонений:
+═══ ФОРМАТ ОТВЕТА (строго!) ═══
 
-Когда нужен бросок:
+Бросок:
 STORY
 текст сцены
 END_STORY
 TYPE=DICE
-DICE=${'{'}notation:1d20,reason:Проверка Ловкости{'}'}
-DATA=${'{'}xp:${curXP+5}{'}'}
+DICE={notation:1d20,reason:Проверка Ловкости — нужно 12+}
+DATA={xp:${curXP+5}}
 
-Когда даёшь выбор:
+Выбор:
 STORY
 текст сцены
 END_STORY
 TYPE=CHOICE
 ACTIONS=⚔️ Атаковать|💬 Поговорить|🏃 Сбежать
-DATA=${'{'}xp:${curXP+8},hp:${hp.cur},gold:${charState.gold}{'}'}
+DATA={xp:${curXP+8}}
 
-Поле DATA — JSON с изменениями (только то что изменилось):
+DATA — JSON только с изменившимися полями:
 hp, mp, xp, gold — числа
-inventory_add: [{"name":"Меч","icon":"⚔️","qty":1,"desc":"описание"}]
+stats: {"Ловкость":13}
+skills: [{"name":"Скрытность","level":2}]
+inventory_add: [{"name":"Зелье","icon":"🧪","qty":1,"desc":"Лечит 20 HP"}]
 inventory_remove: ["название"]
-equipment: {"weapon":{"name":"Меч","icon":"⚔️","stat":"Урон: 1d8"}}
-stats: {"Сила":13}
-skills: [{"name":"Атака","level":2}]
 
-НЕЛЬЗЯ: писать варианты действий в STORY. STORY = только повествование.`;
+ЗАПРЕЩЕНО: писать варианты действий в STORY.`
 }
 
 // ══ ДВИЖОК ══
@@ -703,7 +684,7 @@ const CHAR_SPRITE = [
   '....OSSSO....',
 ];
 
-function drawPixelDoll(worldTheme, equipment) {
+function drawPixelDoll(worldTheme) {
   const canvas = document.getElementById('pixel-doll');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -713,10 +694,7 @@ function drawPixelDoll(worldTheme, equipment) {
 
   const colorMap = { S: pal.skin, H: pal.hair, B: pal.body, L: pal.legs, O: pal.outline, '.': null };
 
-  // Если надето оружие — меняем цвет тела
-  if (equipment?.weapon) colorMap.B = '#6a4030';
-  if (equipment?.armor)  colorMap.B = '#505060';
-  if (equipment?.helmet) colorMap.H = '#707080';
+
 
   const pw = 3, ph = 3;
   // Центрируем спрайт на canvas 48x72
@@ -735,19 +713,7 @@ function drawPixelDoll(worldTheme, equipment) {
     }
   });
 
-  // Меч справа если есть оружие
-  if (equipment?.weapon) {
-    ctx.fillStyle = '#c8c8d0';
-    ctx.fillRect(offsetX + spriteW + 2, offsetY + 20, 3, 16);
-    ctx.fillStyle = '#a06020';
-    ctx.fillRect(offsetX + spriteW, offsetY + 28, 8, 3);
-  }
 
-  // Шлем поверх головы
-  if (equipment?.helmet) {
-    ctx.fillStyle = '#808090';
-    ctx.fillRect(offsetX + 3, offsetY - 3, spriteW - 6, 4);
-  }
 }
 
 // Портрет (32x32 пикселей)
@@ -809,7 +775,7 @@ function drawPortrait(worldTheme, charClass) {
 function updatePixelArt() {
   const theme = document.body.className.match(/theme-(\S+)/)?.[1] || 'default';
   drawPortrait(theme, document.getElementById('portrait-class')?.textContent);
-  drawPixelDoll(theme, charState.equipment);
+  drawPixelDoll(theme);
 }
 
 // Начальный рендер пустых панелей
