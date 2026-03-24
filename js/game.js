@@ -1012,7 +1012,66 @@ const PORTRAIT_BG = {
   starwars:'#020410', lego:'#201000', alice:'#100818', stardew:'#081408', default:'#0e0e14',
 };
 
+// SW character -> sprite id mapping
+const SW_CHAR_SPRITES = {
+  'Оби-Ван Кеноби': 'sw-obiwan',
+  'Джанго Фетт':    'sw-jango',
+  'Энакин Скайуокер':'sw-anakin',
+  'Палпатин':       'sw-palpatine',
+};
+
+function drawPortraitSVG(canvasId, spriteId) {
+  // Replace canvas with inline SVG for SW characters
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const parent = canvas.parentNode;
+  // Remove old SVG portrait if exists
+  const oldSvg = parent.querySelector('.sw-portrait-svg');
+  if (oldSvg) oldSvg.remove();
+  // Create SVG element
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  const size = canvasId === 'portrait-canvas-m' ? '28' : '32';
+  svg.setAttribute('width', size); svg.setAttribute('height', size);
+  svg.setAttribute('viewBox', '0 0 32 34');
+  svg.classList.add('sw-portrait-svg');
+  svg.style.cssText = 'filter:drop-shadow(0 0 4px rgba(0,150,255,0.6));flex-shrink:0;';
+  // Background
+  const bg = document.createElementNS(svgNS, 'rect');
+  bg.setAttribute('width','32'); bg.setAttribute('height','34');
+  bg.setAttribute('rx','4'); bg.setAttribute('fill','#020A18');
+  svg.appendChild(bg);
+  // Use sprite
+  const use = document.createElementNS(svgNS, 'use');
+  use.setAttribute('href', '#' + spriteId);
+  svg.appendChild(use);
+  // Border
+  const border = document.createElementNS(svgNS, 'rect');
+  border.setAttribute('width','31'); border.setAttribute('height','33');
+  border.setAttribute('rx','4'); border.setAttribute('fill','none');
+  border.setAttribute('stroke','#0066AA'); border.setAttribute('stroke-width','1');
+  svg.appendChild(border);
+  // Replace or hide canvas
+  canvas.style.display = 'none';
+  parent.insertBefore(svg, canvas);
+}
+
 function drawPortrait(worldTheme, charClass) {
+  // For starwars — use SVG sprites
+  if (worldTheme === 'starwars') {
+    const spriteId = SW_CHAR_SPRITES[charClass] || 'sw-obiwan';
+    drawPortraitSVG('portrait-canvas', spriteId);
+    drawPortraitSVG('portrait-canvas-m', spriteId);
+    return;
+  }
+  // Restore canvas if switching away from SW
+  ['portrait-canvas','portrait-canvas-m'].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) c.style.display = '';
+    const oldSvg = c?.parentNode?.querySelector('.sw-portrait-svg');
+    if (oldSvg) oldSvg.remove();
+  });
+
   const canvas = document.getElementById('portrait-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -1065,6 +1124,106 @@ renderAllPanels();
 
 // ══ МОБАЙЛ: панель всегда открыта, синхронизация при ресайзе ══
 window.addEventListener('resize', syncMobilePanels);
+
+// ══ ЗВЁЗДНЫЕ ВОЙНЫ: анимация кораблей ══
+(function initSWShips(){
+  const SHIPS = [
+    { id:'sw-ship-xwing',      w:62, h:24, speed:22, y:0.12, opacity:0.35, dir:1  },
+    { id:'sw-ship-tiefighter', w:42, h:26, speed:16, y:0.30, opacity:0.28, dir:-1 },
+    { id:'sw-ship-falcon',     w:58, h:28, speed:12, y:0.55, opacity:0.22, dir:1  },
+    { id:'sw-ship-destroyer',  w:82, h:32, speed:7,  y:0.70, opacity:0.18, dir:-1 },
+    { id:'sw-ship-xwing',      w:48, h:20, speed:28, y:0.20, opacity:0.25, dir:1  },
+    { id:'sw-ship-tiefighter', w:34, h:22, speed:20, y:0.80, opacity:0.20, dir:-1 },
+  ];
+  let container = null;
+  const shipEls = [];
+
+  function createShips(){
+    if (document.body.className.indexOf('theme-starwars') === -1) return;
+    if (container) return;
+    container = document.createElement('div');
+    container.id = 'sw-ships-layer';
+    container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;';
+    document.body.appendChild(container);
+
+    const vw = window.innerWidth;
+    SHIPS.forEach((s, i) => {
+      const ns = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('width', s.w);
+      svg.setAttribute('height', s.h);
+      svg.setAttribute('viewBox', s.dir === 1 ? `0 0 ${s.w} ${s.h}` : `0 0 ${s.w} ${s.h}`);
+      svg.style.cssText = `position:absolute;opacity:${s.opacity};`;
+      if (s.dir === -1) svg.setAttribute('transform', 'scale(-1,1)');
+
+      const use = document.createElementNS(ns, 'use');
+      use.setAttribute('href', '#' + s.id);
+      svg.appendChild(use);
+      container.appendChild(svg);
+
+      // Random start position
+      const startX = s.dir === 1
+        ? -(s.w + Math.random() * vw)
+        : vw + Math.random() * vw;
+
+      shipEls.push({
+        el: svg, s,
+        x: startX,
+        y: window.innerHeight * s.y + (Math.random() - 0.5) * 40,
+        vx: s.speed * s.dir * (0.8 + Math.random() * 0.4),
+      });
+    });
+    animate();
+  }
+
+  function animate(){
+    if (!container) return;
+    if (document.body.className.indexOf('theme-starwars') === -1) {
+      destroyShips(); return;
+    }
+    const vw = window.innerWidth;
+    shipEls.forEach(obj => {
+      obj.x += obj.vx * 0.016; // ~60fps delta
+      // Wrap around
+      if (obj.s.dir === 1 && obj.x > vw + obj.s.w + 20) {
+        obj.x = -obj.s.w - 10;
+        obj.y = window.innerHeight * obj.s.y + (Math.random()-0.5)*60;
+      } else if (obj.s.dir === -1 && obj.x < -(obj.s.w + 20)) {
+        obj.x = vw + obj.s.w + 10;
+        obj.y = window.innerHeight * obj.s.y + (Math.random()-0.5)*60;
+      }
+      // Apply flip for RTL ships
+      if (obj.s.dir === -1) {
+        obj.el.style.left = (obj.x - obj.s.w) + 'px';
+        obj.el.style.top  = obj.y + 'px';
+        obj.el.style.transform = 'scaleX(-1)';
+      } else {
+        obj.el.style.left = obj.x + 'px';
+        obj.el.style.top  = obj.y + 'px';
+      }
+    });
+    requestAnimationFrame(animate);
+  }
+
+  function destroyShips(){
+    if (container) { container.remove(); container = null; shipEls.length = 0; }
+  }
+
+  // Start when theme is applied
+  const observer = new MutationObserver(() => {
+    if (document.body.className.indexOf('theme-starwars') !== -1) {
+      if (!container) setTimeout(createShips, 100);
+    } else {
+      destroyShips();
+    }
+  });
+  observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+  // Also start if already on SW theme
+  if (document.body.className.indexOf('theme-starwars') !== -1) {
+    setTimeout(createShips, 300);
+  }
+})();
 
 // Экспорт в window для onclick
 window.openNakazy  = openNakazy;
