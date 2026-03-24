@@ -593,22 +593,22 @@ function renderActions(parsed){
   html+='</div>'; setActionZone(html);
 }
 
-window._choice=i=>{
+function _choice(i){
   const a=state.currentActions?.[i];
   if(!a||state.locked) return;
   addPlayerMessage(a); askDM(`Я выбираю: ${a}`);
-};
-window._roll=()=>{
+}
+function _roll(){
   if(!state.waitingForDice||state.locked) return;
   const n=state.diceNotation,r=state.diceReason,result=rollDice(n);
   state.waitingForDice=false;
   addDiceResult(n,result,r);
   askDM(`Я бросил ${n} для "${r}" и выпало: ${result}`);
-};
-window._retry=()=>{
+}
+function _retry(){
   if(state.history.length&&state.history[state.history.length-1].role==='assistant') state.history.pop();
   askDM(null);
-};
+}
 
 function restoreHistory(history){
   for(const msg of history){
@@ -788,3 +788,6 @@ window.openNakazy  = openNakazy;
 window.closeNakazy = closeNakazy;
 window.saveNakazy  = saveNakazy;
 window.goToMenu    = goToMenu;
+window._choice     = _choice;
+window._roll       = _roll;
+window._retry      = _retry;
