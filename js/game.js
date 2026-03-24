@@ -346,6 +346,10 @@ function applyCharUpdate(update){
     update.inventory_add.forEach(raw=>{
       // Normalize: Gemini sometimes sends a plain string instead of an object
       const item = typeof raw === 'string' ? {name:raw, icon:'📦', qty:1, desc:''} : raw;
+      // Validate icon: must be a single emoji (≤2 chars grapheme cluster), else fallback
+      const iconStr = item.icon || '';
+      const isEmoji = iconStr.length > 0 && iconStr.length <= 4 && /\p{Emoji}/u.test(iconStr);
+      if (!isEmoji) item.icon = '📦';
       if (!item.name) return; // skip malformed entries
       // Skip if this item is also being removed in the same update (Gemini contradiction guard)
       if (update.inventory_remove) {
@@ -536,9 +540,10 @@ HP: ${hp.cur}/${hp.max} | ${mpCfg.label}: ${mp.cur}/${mp.max} | Опыт: ${curX
 6. Называй характеристики и навыки персонажа по имени когда они релевантны.
 
 ═══ КАК ПИСАТЬ ═══
-- 2-3 абзаца. От второго лица. Сразу к действию, без вступлений.
+- СТРОГО 1-2 абзаца. Максимум 600 символов в STORY. Сразу к действию, без вступлений и резюме.
+- Не пересказывай что игрок только что сделал — сразу результат и то что происходит дальше.
 - Диалоги с тире: — Реплика! — сказал NPC.
-- 2-3 эмодзи по смыслу.
+- 1-2 эмодзи по смыслу, не больше.
 
 ═══ МЕХАНИКА ═══
 - Рискованное действие где стат не гарантирует успех → TYPE=DICE
@@ -723,6 +728,13 @@ function parseGeminiResponse(text) {
     }
   }
 
+  // Hard trim story to ~700 chars, cut at last sentence boundary
+  if (result.story.length > 700) {
+    const trimmed = result.story.slice(0, 720);
+    const lastPunct = Math.max(trimmed.lastIndexOf('!'), trimmed.lastIndexOf('.'), trimmed.lastIndexOf('?'));
+    result.story = lastPunct > 400 ? trimmed.slice(0, lastPunct + 1) : trimmed.trimEnd() + '…';
+  }
+
   if (result.type==='choice' && result.actions.length===0) {
     result.actions = ['▶️ Продолжить...'];
   }
@@ -768,7 +780,7 @@ async function askDM(userMessage){
     addDMMessage(parsed.story);
     if(parsed.char_update) applyCharUpdate(parsed.char_update);
     // Grant XP by scene type: CHOICE = small passive xp, DICE scenes grant XP in _roll
-    if(parsed.type === 'choice') grantXP(5);
+    if(parsed.type === 'choice') grantXP(1);
     state.locked = false;   // ← разблокируем ДО renderActions, иначе кнопки не работают
     renderActions(parsed);
     saveProgress();
@@ -835,7 +847,7 @@ function _roll(){
   const threshM = r.match(/(\d+)\+/);
   const threshold = threshM ? parseInt(threshM[1]) : 10;
   const success = result >= threshold;
-  grantXP(success ? 20 : 8);  // success: +20, failure: +8 (still learned something)
+  grantXP(success ? 4 : 2);  // success: +4, failure: +2 (x5 slower)
   askDM(`Я бросил ${n} для "${r}" и выпало: ${result}`);
 }
 function _retry(){
