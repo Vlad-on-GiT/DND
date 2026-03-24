@@ -207,125 +207,198 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
 @media(max-width:1100px){.game-layout{grid-template-columns:220px 1fr 220px;}}
 
 @media(max-width:860px){
-  /* ── Планшет/мобайл: вертикальный layout ── */
-  .body-wrap{ padding-top:48px; }
+  /* ════════════════════════════════════
+     МОБАЙЛ/ПЛАНШЕТ — полный пересмотр
+     Высоты (при bar=48px):
+       - Шапка bar: 48px
+       - Инвентарь-хэндл (всегда виден): 76px
+       - Панель характеристик (скрытая): 230px, вытягивается свайпом
+       - Текст: 100vh - 48px - 76px = calc(100vh - 124px)
+     ════════════════════════════════════ */
 
-  /* Весь экран = flex-колонка, фиксированная высота */
-  .game-layout{
+  .body-wrap { padding-top: 48px; overflow: hidden; height: calc(100vh - 48px); }
+
+  /* ── ОСНОВНОЙ LAYOUT: flex-колонка ── */
+  .game-layout {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 48px);
+    height: 100%;
     overflow: hidden;
-    padding: 6px 10px 0;
-    gap: 8px;
-    max-width: 100%;
+    padding: 0;
+    gap: 0;
+    position: relative;
   }
 
-  /* ── ШАПКА: левая и правая панели рядом ── */
-  #left-panel{
+  /* ── ТЕКСТОВОЕ ПОЛЕ — сверху, занимает всё кроме инвентарь-хэндла ── */
+  .container {
     order: 1;
-    position: static;
-    max-height: none;
-    overflow: visible;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-  #right-panel{
-    order: 1; /* тот же order — будет после left-panel */
-    position: static;
-    max-height: none;
-    overflow: visible;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px;
-    flex-shrink: 0;
-    /* Вместе с left-panel формируют горизонтальный ряд */
-    display: flex;
-  }
-  /* Оба панели — в один горизонтальный контейнер */
-  #left-panel, #right-panel{
     flex: 1;
-    min-width: 140px;
-  }
-
-  /* Карточки компактнее */
-  #left-panel .panel-card,
-  #right-panel .panel-card{
-    min-width: 0;
-    flex: 1;
-  }
-  .panel-header{ padding:7px 10px 6px; }
-  .panel-body{ padding:8px 10px; }
-
-  /* Портрет — горизонтально */
-  .portrait-wrap{
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-  }
-  canvas#portrait-canvas{ width:28px !important; height:28px !important; }
-  .portrait-name{ font-size:14px; }
-  .portrait-class{ font-size:11px; }
-  .portrait-level{ font-size:11px; margin-top:1px; }
-
-  /* HP/MP/XP — компактно */
-  .stat-bar-row{ margin-bottom:5px; }
-  .stat-bar-val{ font-size:10px; }
-  .stat-bar-name{ font-size:10px; }
-  .stat-bar-track{ height:6px; }
-
-  /* Характеристики — 4 в ряд */
-  .stats-grid{ grid-template-columns:repeat(4,1fr); gap:4px; margin-bottom:0; }
-  .stat-item{ padding:4px 3px; }
-  .stat-item-val{ font-size:13px; }
-  .stat-item-name{ font-size:8px; }
-
-  /* Навыки — две колонки компактно */
-  .skills-list{ display:grid; grid-template-columns:1fr 1fr; gap:2px; }
-  .skill-name{ font-size:10px; }
-  .skill-dot{ width:6px; height:6px; }
-
-  /* Инвентарь — 6 колонок */
-  .inv-grid{ grid-template-columns:repeat(6,1fr); gap:4px; margin-bottom:6px; }
-  .inv-cell{ font-size:15px; }
-  .gold-row{ padding-top:4px; font-size:12px; }
-  .gold-icon{ font-size:13px; }
-
-  /* ── ЦЕНТР: текст в фиксированном окне со скроллом ── */
-  .container{
-    order: 2;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    flex: 1;          /* занимает всё оставшееся пространство */
-    min-height: 0;    /* важно для flex scroll */
     overflow: hidden;
+    padding: 0 10px;
+    padding-bottom: 0;
   }
 
-  #story-log{
+  #story-log {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
-    padding: 8px 0;
+    padding: 10px 0 6px;
     gap: 10px;
     -webkit-overflow-scrolling: touch;
   }
 
-  #action-zone{
+  #action-zone {
     flex-shrink: 0;
-    padding-top: 8px;
-    padding-bottom: 8px;
+    padding: 6px 0 8px;
   }
 
-  #save-indicator{ display:none; }
+  #save-indicator { display: none; }
 
-  /* Текст */
-  .dm-text{ font-size:14px; line-height:1.55; }
-  .dm-block{ padding:12px 14px; }
-  .action-btn{ font-size:14px; padding:10px 14px; }
-  .dice-btn{ font-size:13px; padding:12px 14px; }
+  /* ── ВЫЕЗЖАЮЩАЯ ПАНЕЛЬ ХАРАКТЕРИСТИК ── */
+  /* Контейнер-шторка: прикреплён к низу экрана */
+  #mobile-panel-wrap {
+    order: 2;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 50;
+  }
+
+  /* Левая и правая боковые панели скрыты в обычном потоке */
+  #left-panel, #right-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* ── ИНВЕНТАРЬ-ХЭНДЛ (всегда виден внизу) ── */
+  #mobile-inv-handle {
+    background: var(--bg-card);
+    border-top: 2px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    padding: 6px 10px 8px;
+    cursor: grab;
+    user-select: none;
+    touch-action: pan-y;
+  }
+
+  /* Ручка-индикатор свайпа */
+  #mobile-inv-handle::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 6px;
+    opacity: 0.6;
+  }
+
+  /* Горизонтальный инвентарь */
+  #mobile-inv-handle .inv-grid {
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    margin-bottom: 0;
+  }
+
+  #mobile-inv-handle .inv-cell {
+    font-size: 18px;
+    aspect-ratio: 1;
+  }
+
+  #mobile-inv-handle .panel-header { display: none; }
+  #mobile-inv-handle .panel-body { padding: 0; }
+  #mobile-inv-handle .panel-card {
+    border: none;
+    background: transparent;
+  }
+
+  .gold-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 4px;
+    font-size: 12px;
+  }
+
+  /* ── ШТОРКА ХАРАКТЕРИСТИК ── */
+  #mobile-stats-drawer {
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    padding: 8px 10px 10px;
+    overflow-y: auto;
+    max-height: 230px;
+    /* По умолчанию скрыта: сдвинута вниз */
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.25,0.8,0.25,1);
+  }
+
+  #mobile-stats-drawer.open {
+    transform: translateY(0);
+  }
+
+  /* Содержимое шторки — 2 колонки */
+  #mobile-stats-drawer .stats-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* Портрет в шторке */
+  .portrait-wrap {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .portrait-name { font-size: 14px; }
+  .portrait-class { font-size: 11px; }
+  .portrait-level { font-size: 11px; }
+
+  /* Полоски в шторке */
+  .stat-bar-row { margin-bottom: 5px; }
+  .stat-bar-name { font-size: 10px; }
+  .stat-bar-val { font-size: 10px; }
+  .stat-bar-track { height: 6px; }
+
+  /* Характеристики — 4 в ряд */
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .stat-item { padding: 4px 2px; }
+  .stat-item-val { font-size: 13px; }
+  .stat-item-name { font-size: 8px; }
+
+  /* Навыки — 2 колонки */
+  .skills-list { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+  .skill-name { font-size: 10px; }
+  .skill-dot { width: 6px; height: 6px; }
+
+  /* Остальные panel-card в шторке — без рамки */
+  #mobile-stats-drawer .panel-card {
+    border: none;
+    background: transparent;
+  }
+  #mobile-stats-drawer .panel-header {
+    padding: 0 0 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+  }
+  #mobile-stats-drawer .panel-body { padding: 0; }
+
+  /* Текст сообщений */
+  .dm-text { font-size: 14px; line-height: 1.55; }
+  .dm-block { padding: 10px 12px; }
+  .action-btn { font-size: 14px; padding: 10px 14px; }
+  .dice-btn { font-size: 13px; padding: 11px 14px; }
+  .panel-header-title { font-size: 11px; }
 }
 
 @media(max-width:500px){
@@ -419,4 +492,10 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
 .levelup-hint{
   font-size:11px;color:var(--text-dim);opacity:0.5;
   text-align:center;font-style:italic;
+}
+
+/* ── Мобайл-панель: скрыта на десктопе ── */
+#mobile-panel-wrap { display: none; }
+@media(max-width:860px){
+  #mobile-panel-wrap { display: block; }
 }
