@@ -40,7 +40,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .panel-header{padding:10px 14px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
 .panel-header-icon{font-size:14px;}
 .panel-header-title{font-family:var(--font-title);font-size:12px;color:var(--accent2);letter-spacing:0.05em;text-transform:uppercase;}
-.panel-body{padding:12px 14px;}
+.panel-body{padding:12px 14px;min-width:0;}
 
 /* ── ПЕРСОНАЖ: ПОЛОСКИ HP/MP ── */
 .stat-bar-row{margin-bottom:10px;}
@@ -105,8 +105,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .slot-tooltip-stat{font-size:11px;color:var(--text-dim);line-height:1.5;}
 
 /* ── ИНВЕНТАРЬ ── */
-.inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
-.inv-cell{aspect-ratio:1;border:1px solid var(--border);border-radius:7px;background:rgba(255,255,255,0.03);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;position:relative;font-size:20px;}
+.inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;overflow:hidden;}
+.inv-cell{aspect-ratio:1;border:1px solid var(--border);border-radius:7px;background:rgba(255,255,255,0.03);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;position:relative;font-size:20px;overflow:hidden;min-width:0;}
 .inv-cell:hover{border-color:var(--accent2);background:rgba(255,255,255,0.07);}
 .inv-cell.has-item{border-color:color-mix(in srgb,var(--accent) 50%,transparent);}
 .inv-cell .item-qty{position:absolute;bottom:3px;right:4px;font-size:9px;color:var(--accent2);font-weight:700;line-height:1;}
@@ -205,11 +205,133 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
 
 /* ── АДАПТИВ ── */
 @media(max-width:1100px){.game-layout{grid-template-columns:220px 1fr 220px;}}
+
 @media(max-width:860px){
-  .game-layout{grid-template-columns:1fr;grid-template-rows:auto;}
-  .side-panel{position:static;flex-direction:row;flex-wrap:wrap;}
-  .panel-card{min-width:200px;flex:1;}
-  .doll-wrap{width:120px;height:170px;}
+  /* ── Планшет/мобайл: вертикальный layout ── */
+  .body-wrap{ padding-top:48px; }
+
+  /* Весь экран = flex-колонка, фиксированная высота */
+  .game-layout{
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 48px);
+    overflow: hidden;
+    padding: 6px 10px 0;
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  /* ── ШАПКА: левая и правая панели рядом ── */
+  #left-panel{
+    order: 1;
+    position: static;
+    max-height: none;
+    overflow: visible;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  #right-panel{
+    order: 1; /* тот же order — будет после left-panel */
+    position: static;
+    max-height: none;
+    overflow: visible;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex-shrink: 0;
+    /* Вместе с left-panel формируют горизонтальный ряд */
+    display: flex;
+  }
+  /* Оба панели — в один горизонтальный контейнер */
+  #left-panel, #right-panel{
+    flex: 1;
+    min-width: 140px;
+  }
+
+  /* Карточки компактнее */
+  #left-panel .panel-card,
+  #right-panel .panel-card{
+    min-width: 0;
+    flex: 1;
+  }
+  .panel-header{ padding:7px 10px 6px; }
+  .panel-body{ padding:8px 10px; }
+
+  /* Портрет — горизонтально */
+  .portrait-wrap{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  canvas#portrait-canvas{ width:28px !important; height:28px !important; }
+  .portrait-name{ font-size:14px; }
+  .portrait-class{ font-size:11px; }
+  .portrait-level{ font-size:11px; margin-top:1px; }
+
+  /* HP/MP/XP — компактно */
+  .stat-bar-row{ margin-bottom:5px; }
+  .stat-bar-val{ font-size:10px; }
+  .stat-bar-name{ font-size:10px; }
+  .stat-bar-track{ height:6px; }
+
+  /* Характеристики — 4 в ряд */
+  .stats-grid{ grid-template-columns:repeat(4,1fr); gap:4px; margin-bottom:0; }
+  .stat-item{ padding:4px 3px; }
+  .stat-item-val{ font-size:13px; }
+  .stat-item-name{ font-size:8px; }
+
+  /* Навыки — две колонки компактно */
+  .skills-list{ display:grid; grid-template-columns:1fr 1fr; gap:2px; }
+  .skill-name{ font-size:10px; }
+  .skill-dot{ width:6px; height:6px; }
+
+  /* Инвентарь — 6 колонок */
+  .inv-grid{ grid-template-columns:repeat(6,1fr); gap:4px; margin-bottom:6px; }
+  .inv-cell{ font-size:15px; }
+  .gold-row{ padding-top:4px; font-size:12px; }
+  .gold-icon{ font-size:13px; }
+
+  /* ── ЦЕНТР: текст в фиксированном окне со скроллом ── */
+  .container{
+    order: 2;
+    display: flex;
+    flex-direction: column;
+    flex: 1;          /* занимает всё оставшееся пространство */
+    min-height: 0;    /* важно для flex scroll */
+    overflow: hidden;
+  }
+
+  #story-log{
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    padding: 8px 0;
+    gap: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #action-zone{
+    flex-shrink: 0;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  #save-indicator{ display:none; }
+
+  /* Текст */
+  .dm-text{ font-size:14px; line-height:1.55; }
+  .dm-block{ padding:12px 14px; }
+  .action-btn{ font-size:14px; padding:10px 14px; }
+  .dice-btn{ font-size:13px; padding:12px 14px; }
+}
+
+@media(max-width:500px){
+  .stats-grid{ grid-template-columns: repeat(2,1fr); }
+  .inv-grid{ grid-template-columns: repeat(4,1fr); }
+  .skills-list{ grid-template-columns: 1fr; }
 }
 
 /* ── СВОЁ ДЕЙСТВИЕ ── */
