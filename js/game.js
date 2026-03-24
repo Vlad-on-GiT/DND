@@ -490,18 +490,42 @@ async function askDM(userMessage){
   showTyping(true); setActionZone('');
 
   try {
-    // ── ЕДИНСТВЕННЫЙ ЗАПРОС к Gemini 2.5 Flash ──
+    // ── ЗАПРОС к Gemini 2.5 Flash ──
     const resp1 = await fetch('https://dnd-proxy.vercel.app/api/proxy',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        max_tokens:2000,
+        max_tokens:3000,
         system:buildSystemPrompt(),
         messages:state.history
       })
     });
     const data1 = await resp1.json();
-    const raw1  = data1.content?.[0]?.text||'{}';
+    let raw1 = data1.content?.[0]?.text||'{}';
+    const finishReason = data1.finishReason || 'STOP';
+
+    // Если Gemini обрезал ответ по токенам — закрываем JSON вручную
+    if (finishReason === 'MAX_TOKENS') {
+      // Пытаемся восстановить обрезанный JSON: обрываем story на последнем полном предложении
+      const storyMatch = raw1.match(/"story"\s*:\s*"([\s\S]*?)(?:"|$)/);
+      if (storyMatch) {
+        const brokenStory = storyMatch[1];
+        // Обрезаем до последней точки/восклицательного/вопросительного знака
+        const lastSentence = brokenStory.replace(/\\n/g, '\n').trimEnd();
+        const cutIdx = Math.max(
+          lastSentence.lastIndexOf('.'),
+          lastSentence.lastIndexOf('!'),
+          lastSentence.lastIndexOf('?'),
+          lastSentence.lastIndexOf('…')
+        );
+        const cleanStory = cutIdx > 20 ? lastSentence.substring(0, cutIdx + 1) : lastSentence;
+        raw1 = JSON.stringify({
+          story: cleanStory.replace(/\n/g, '\n'),
+          type: 'choice',
+          actions: ['▶️ Продолжить...'],
+        });
+      }
+    }
 
     let parsed;
     try {
@@ -513,7 +537,7 @@ async function askDM(userMessage){
       showTyping(false); state.locked=false;
       setTimeout(()=>askDM(null),1500); return;
     }
-    // Если модель не дала actions — принудительно просим продолжить
+    // Если модель не дала actions — принудительно добавляем
     if (parsed.type==='choice' && (!parsed.actions || parsed.actions.length===0)) {
       parsed.actions = ['▶️ Продолжить...'];
     }
@@ -528,13 +552,7 @@ async function askDM(userMessage){
   } catch(err){
     showTyping(false);
     state.locked = false;
-    if (!state._retryCount) state._retryCount = 0;
-    if (state._retryCount < 2) {
-      state._retryCount++;
-      setTimeout(() => askDM(null), 2000);
-      return;
-    }
-    state._retryCount = 0;
+    // Не делаем авто-ретрай — он вызывает дублирование сообщений
     addDMMessage('⚠ Связь прервана. Попробуй ещё раз.');
     setActionZone(`<button class="action-btn" onclick="window._retry()">🔄 Попробовать снова</button>`);
     return;
