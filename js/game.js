@@ -271,7 +271,16 @@ function applyCharUpdate(update){
   if(update.hp_max!==undefined){ charState.hp.max=update.hp_max; changed=true; }
   if(update.mp!==undefined){ charState.mp.cur=Math.max(0,Math.min(charState.mp.max,update.mp)); changed=true; }
   if(update.mp_max!==undefined){ charState.mp.max=update.mp_max; changed=true; }
-  if(update.xp!==undefined){ charState.xp.cur=update.xp; if(charState.xp.cur>=charState.xp.max){charState.xp.cur=0;charState.xp.max=Math.round(charState.xp.max*1.5);levelUp();} changed=true; }
+  // xp_add = delta (preferred). Legacy xp = absolute but never decrease.
+  if(update.xp_add!==undefined){ charState.xp.cur += Math.max(0, update.xp_add); changed=true; }
+  else if(update.xp!==undefined){ charState.xp.cur = Math.max(charState.xp.cur, update.xp); changed=true; }
+  // Level up loop (handles multi-level jumps)
+  while(charState.xp.cur >= charState.xp.max){
+    charState.xp.cur -= charState.xp.max;
+    charState.xp.max = Math.round(charState.xp.max * 1.5);
+    levelUp();
+    changed=true;
+  }
   if(update.gold!==undefined){ charState.gold=update.gold; changed=true; }
 
   if(update.stats){ Object.assign(charState.stats,update.stats); changed=true; }
@@ -317,7 +326,7 @@ function levelUp(){
   charState.hp.max+=10; charState.hp.cur=charState.hp.max;
   charState.mp.max+=5;  charState.mp.cur=charState.mp.max;
   document.getElementById('portrait-level').textContent=`Ур. ${playerLevel}`;
-  addDMMessage(`✨ Уровень ${playerLevel}! Характеристики улучшены.`);
+  addDMMessage(`✨ Уровень ${playerLevel}! Все характеристики улучшены.`);
   updatePixelArt();
   saveCharState();
 }
@@ -393,7 +402,7 @@ HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${x
 
 ═══ МЕХАНИКА ═══
 - Рискованное действие где стат не гарантирует успех → TYPE=DICE
-- xp каждый ход: обычная сцена +5-10, бой +20-50, применение навыка +10-15
+- xp_add каждый ход: обычная сцена 5-10, бой 20-50, применение навыка 10-15. ВСЕГДА xp_add (не xp), опыт никогда не убывает
 - Урон от врагов: hp -5 до -20. HP не ниже 1.
 - mp < 10 — магические навыки недоступны, упоминай это
 
@@ -405,7 +414,7 @@ STORY
 END_STORY
 TYPE=DICE
 DICE={notation:1d20,reason:Проверка Ловкости — нужно 12+}
-DATA={xp:${curXP+5}}
+DATA={xp_add:5}
 
 Выбор:
 STORY
@@ -413,10 +422,10 @@ STORY
 END_STORY
 TYPE=CHOICE
 ACTIONS=⚔️ Атаковать|💬 Поговорить|🏃 Сбежать
-DATA={xp:${curXP+8}}
+DATA={xp_add:8}
 
 DATA — JSON только с изменившимися полями:
-hp, mp, xp, gold — числа
+hp, mp, gold — числа | xp_add — ПРИРОСТ опыта (всегда положительное число!)
 stats: {"Ловкость":13}
 skills: [{"name":"Скрытность","level":2}]
 inventory_add: [{"name":"Зелье","icon":"🧪","qty":1,"desc":"Лечит 20 HP"}]
