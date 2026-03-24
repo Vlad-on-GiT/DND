@@ -472,6 +472,170 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
   text-align:center;font-style:italic;
 }
 
+/* ══ ЗВЁЗДНЫЕ ВОЙНЫ: Неон, световые мечи, усиленный эффект ══ */
+
+/* Фильтры свечения через SVG filter (работает как glow без blur) */
+body.theme-starwars {
+  --sw-blue:  #00aaff;
+  --sw-blue2: #44ccff;
+  --sw-red:   #ff2222;
+  --sw-green: #00ff66;
+  --sw-yellow:#ffcc00;
+}
+
+/* Световые мечи — декоративные линии по краям контейнера */
+body.theme-starwars .container::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -3px;
+  width: 3px;
+  height: 100%;
+  background: var(--sw-blue);
+  box-shadow:
+    0 0 4px  var(--sw-blue),
+    0 0 10px var(--sw-blue),
+    0 0 20px var(--sw-blue2),
+    0 0 40px rgba(0,170,255,0.3);
+  animation: sw-saber-pulse 3s ease-in-out infinite;
+  border-radius: 2px;
+}
+body.theme-starwars #right-panel::after,
+body.theme-starwars #left-panel::after {
+  content: '';
+  position: fixed;
+  top: 48px;
+  width: 2px;
+  height: calc(100vh - 48px);
+  background: rgba(0,150,255,0.25);
+  box-shadow: 0 0 6px rgba(0,150,255,0.4), 0 0 16px rgba(0,150,255,0.2);
+  pointer-events: none;
+  animation: sw-saber-pulse 4s ease-in-out infinite 1s;
+}
+body.theme-starwars #left-panel::after  { left: 258px; }
+body.theme-starwars #right-panel::after { right: 258px; }
+
+@keyframes sw-saber-pulse {
+  0%,100% { opacity: 0.7; box-shadow: 0 0 4px var(--sw-blue), 0 0 12px var(--sw-blue), 0 0 24px rgba(0,170,255,0.25); }
+  50%      { opacity: 1;   box-shadow: 0 0 6px var(--sw-blue), 0 0 20px var(--sw-blue2), 0 0 40px rgba(0,200,255,0.5), 0 0 60px rgba(0,120,255,0.2); }
+}
+
+/* Неон на заголовках панелей */
+body.theme-starwars .panel-header-title {
+  text-shadow:
+    0 0 6px  rgba(0,170,255,0.8),
+    0 0 14px rgba(0,150,255,0.5);
+  letter-spacing: 0.12em;
+}
+
+/* Неон на значениях характеристик */
+body.theme-starwars .stat-item-val {
+  text-shadow:
+    0 0 8px  rgba(0,200,255,0.9),
+    0 0 20px rgba(0,150,255,0.6),
+    0 0 40px rgba(0,100,255,0.3);
+  color: #80e0ff;
+}
+
+/* Неон на полосках HP/MP/XP */
+body.theme-starwars .stat-bar-fill.hp {
+  background: linear-gradient(90deg, #660000, #cc2222);
+  box-shadow: 0 0 6px #ff2222, 0 0 14px rgba(255,0,0,0.5);
+  animation: sw-hp-flicker 4s ease-in-out infinite;
+}
+body.theme-starwars .stat-bar-fill.mp {
+  background: linear-gradient(90deg, #001855, var(--sw-blue));
+  box-shadow: 0 0 8px var(--sw-blue), 0 0 20px rgba(0,150,255,0.5);
+}
+@keyframes sw-hp-flicker {
+  0%,100%,90% { box-shadow: 0 0 6px #ff2222, 0 0 14px rgba(255,0,0,0.5); }
+  95%          { box-shadow: 0 0 10px #ff4444, 0 0 24px rgba(255,0,0,0.8), 0 0 40px rgba(255,0,0,0.3); }
+}
+
+/* Точки навыков в SW — светящиеся */
+body.theme-starwars .skill-dot.filled {
+  background: var(--sw-blue);
+  box-shadow: 0 0 4px var(--sw-blue), 0 0 8px rgba(0,170,255,0.6);
+  border-color: var(--sw-blue2);
+}
+
+/* Кнопки действий — голограмма с неоновой границей */
+body.theme-starwars .action-btn {
+  border-color: rgba(0,170,255,0.4);
+  box-shadow:
+    inset 0 0 12px rgba(0,100,200,0.06),
+    0 0 8px rgba(0,100,200,0.12);
+}
+body.theme-starwars .action-btn:hover {
+  border-color: var(--sw-blue);
+  box-shadow:
+    inset 0 0 16px rgba(0,150,255,0.12),
+    0 0 16px rgba(0,170,255,0.4),
+    0 0 32px rgba(0,100,255,0.2);
+  color: #c0eeff;
+}
+
+/* Блики световых мечей на DM-блоках */
+body.theme-starwars .dm-block {
+  box-shadow:
+    -3px 0 0 var(--sw-blue),
+    -3px 0 12px rgba(0,170,255,0.5),
+    inset 0 0 30px rgba(0,60,120,0.08);
+}
+
+/* Заголовок шапки — неоновое свечение */
+body.theme-starwars #bar-title {
+  text-shadow:
+    0 0 10px rgba(0,200,255,0.9),
+    0 0 25px rgba(0,150,255,0.6),
+    0 0 50px rgba(0,100,255,0.3);
+}
+
+/* Золото / очки — жёлтый неон */
+body.theme-starwars .gold-val,
+body.theme-starwars #gold-val,
+body.theme-starwars #gold-val-m {
+  color: var(--sw-yellow);
+  text-shadow: 0 0 6px var(--sw-yellow), 0 0 14px rgba(255,200,0,0.5);
+}
+
+/* Dice button — красный неон Ситхов */
+body.theme-starwars .dice-btn {
+  border-color: rgba(200,50,50,0.5);
+  color: #ffaaaa;
+  box-shadow: inset 0 0 12px rgba(180,0,0,0.08), 0 0 10px rgba(200,0,0,0.15);
+}
+body.theme-starwars .dice-btn:hover {
+  box-shadow:
+    inset 0 0 16px rgba(200,0,0,0.15),
+    0 0 20px rgba(255,0,0,0.5),
+    0 0 40px rgba(200,0,0,0.25);
+  color: #ffcccc;
+}
+
+/* Число броска кубика — жёлтый световой меч */
+body.theme-starwars .roll-number {
+  color: var(--sw-yellow);
+  text-shadow:
+    0 0 10px var(--sw-yellow),
+    0 0 25px rgba(255,200,0,0.7),
+    0 0 50px rgba(255,150,0,0.4);
+}
+
+/* Уровень персонажа */
+body.theme-starwars .portrait-level {
+  color: var(--sw-blue2);
+  text-shadow: 0 0 8px var(--sw-blue);
+}
+
+/* Мобайл — световой меч снизу инвентаря */
+@media(max-width:860px) {
+  body.theme-starwars #mobile-inv-handle {
+    border-top: 2px solid var(--sw-blue);
+    box-shadow: 0 -4px 16px rgba(0,150,255,0.3), 0 -1px 4px rgba(0,200,255,0.5);
+  }
+}
+
+
 /* ══════════════════════════════════════
    ЗВЁЗДНЫЕ ВОЙНЫ — анимации и спрайты
    ══════════════════════════════════════ */
