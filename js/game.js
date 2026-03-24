@@ -559,19 +559,16 @@ async function askDM(userMessage){
     showTyping(false);
     addDMMessage(parsed.story);
     if(parsed.char_update) applyCharUpdate(parsed.char_update);
+    state.locked = false;   // ← разблокируем ДО renderActions, иначе кнопки не работают
     renderActions(parsed);
     saveProgress();
 
   } catch(err){
     showTyping(false);
     state.locked = false;
-    // Не делаем авто-ретрай — он вызывает дублирование сообщений
     addDMMessage('⚠ Связь прервана. Попробуй ещё раз.');
     setActionZone(`<button class="action-btn" onclick="window._retry()">🔄 Попробовать снова</button>`);
-    return;
   }
-  state._retryCount = 0;
-  state.locked=false;
 }
 
 function renderActions(parsed){
