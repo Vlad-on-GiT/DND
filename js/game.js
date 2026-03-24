@@ -203,6 +203,16 @@ function setupWorld(d){
     const mpCfg = WORLD_MP_CONFIG[d.worldTheme] || WORLD_MP_CONFIG.default;
     const mpLbl = document.getElementById('mp-label');
     if (mpLbl) mpLbl.textContent = mpCfg.label;
+    // SW: apply character colour theme
+    if (d.worldTheme === 'starwars') {
+      document.body.classList.remove('sw-jedi','sw-sith');
+      const cc = (d.charClass||'').toLowerCase();
+      if (cc.includes('оби') || cc.includes('энакин') || cc.includes('anakin') || cc.includes('obi')) {
+        document.body.classList.add('sw-jedi');
+      } else if (cc.includes('джанго') || cc.includes('палпатин') || cc.includes('jango') || cc.includes('palpatine')) {
+        document.body.classList.add('sw-sith');
+      }
+    }
   }
   document.getElementById('game-title').textContent    = d.worldTitle    ||'Врата Миров';
   document.getElementById('game-subtitle').textContent = d.worldSubtitle ||'Твоё приключение';
