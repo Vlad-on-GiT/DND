@@ -471,3 +471,137 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
   font-size:11px;color:var(--text-dim);opacity:0.5;
   text-align:center;font-style:italic;
 }
+
+/* ══════════════════════════════════════
+   ЗВЁЗДНЫЕ ВОЙНЫ — анимации и спрайты
+   ══════════════════════════════════════ */
+
+/* Звёздное поле — псевдоэлементы на body */
+body.theme-starwars::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.9) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.7) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 40% 8%,  rgba(255,255,255,0.85) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 65%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 30%, rgba(255,255,255,0.8) 0%, transparent 100%),
+    radial-gradient(2px 2px at 80% 55%, rgba(128,224,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.9) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,0.7) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 35% 55%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 78% 78%, rgba(128,200,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5%  50%, rgba(255,255,255,0.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 35%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 92% 40%, rgba(100,180,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 20% 95%, rgba(255,255,255,0.6) 0%, transparent 100%);
+  animation: sw-stars-drift 120s linear infinite;
+}
+
+@keyframes sw-stars-drift {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-30px); }
+}
+
+/* Пролетающий объект (крестокрыл) — редкая анимация */
+body.theme-starwars .game-layout::before {
+  content: 'X';
+  font-family: monospace;
+  font-size: 10px;
+  color: rgba(128,200,255,0.25);
+  position: fixed;
+  top: 20%;
+  left: -60px;
+  pointer-events: none;
+  z-index: 0;
+  animation: sw-flyby 35s linear infinite;
+  letter-spacing: -2px;
+  text-shadow: 0 0 6px rgba(0,170,255,0.4);
+}
+@keyframes sw-flyby {
+  0%   { left: -60px;  top: 18%; opacity: 0; }
+  5%   { opacity: 0.35; }
+  95%  { opacity: 0.2; }
+  100% { left: calc(100vw + 60px); top: 22%; opacity: 0; }
+}
+
+/* Световой меч — декор на DM-блоках в теме SW */
+body.theme-starwars .dm-block {
+  border-left-color: #00aaff;
+  box-shadow: inset 0 0 20px rgba(0,100,200,0.06), 0 0 12px rgba(0,100,255,0.08);
+}
+body.theme-starwars .dm-block::before {
+  content: '⚡';
+  color: #00aaff;
+  text-shadow: 0 0 8px #00aaff;
+}
+
+/* Кнопки действий в SW теме — голограмма */
+body.theme-starwars .action-btn {
+  border-color: rgba(0,150,255,0.3);
+  position: relative;
+  overflow: hidden;
+}
+body.theme-starwars .action-btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0,170,255,0.08), transparent);
+  animation: sw-scan 4s linear infinite;
+}
+@keyframes sw-scan {
+  0%   { left: -60%; }
+  100% { left: 160%; }
+}
+
+/* Полоска опыта в SW — синяя с пульсацией */
+body.theme-starwars .stat-bar-fill.xp {
+  background: linear-gradient(90deg, #003080, #00aaff);
+  box-shadow: 0 0 6px rgba(0,170,255,0.5);
+  animation: sw-xp-pulse 3s ease-in-out infinite;
+}
+@keyframes sw-xp-pulse {
+  0%,100% { box-shadow: 0 0 4px rgba(0,170,255,0.4); }
+  50%      { box-shadow: 0 0 10px rgba(0,170,255,0.8); }
+}
+
+/* Голокрон-анимация на портрете в SW теме */
+body.theme-starwars #portrait-canvas,
+body.theme-starwars #portrait-canvas-m {
+  filter: drop-shadow(0 0 6px rgba(0,170,255,0.7));
+  animation: sw-holo 4s ease-in-out infinite;
+}
+@keyframes sw-holo {
+  0%,100% { filter: drop-shadow(0 0 4px rgba(0,170,255,0.5)); opacity: 1; }
+  50%     { filter: drop-shadow(0 0 10px rgba(0,200,255,0.9)); opacity: 0.92; }
+}
+
+/* Текст характеристик в SW теме — цифры светятся */
+body.theme-starwars .stat-item-val {
+  text-shadow: 0 0 8px rgba(0,170,255,0.6);
+}
+
+/* Сканлайн-эффект поверх всего (очень тонкий) */
+body.theme-starwars .container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,100,255,0.012) 3px,
+    rgba(0,100,255,0.012) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+body.theme-starwars .container { position: relative; }
+body.theme-starwars #story-log { position: relative; z-index: 1; }
+body.theme-starwars #action-zone { position: relative; z-index: 1; }
