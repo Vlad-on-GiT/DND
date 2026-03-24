@@ -380,52 +380,43 @@ HP: ${hp.cur}/${hp.max} | Мана: ${mp.cur}/${mp.max} | Опыт: ${curXP}/${m
 Инвентарь: ${invStr}
 Экипировка: ${equipStr}
 
-КАК ПИСАТЬ ТЕКСТ — коротко и динамично:
-- МАКСИМУМ 2-3 коротких абзаца. Разделяй через \\n\\n.
-- Каждый абзац = 1-2 предложения. Никаких длинных описаний.
-- Больше диалогов, меньше описаний. Диалог с тире: — Стой! — рявкнул стражник. 😤
-- 2-3 эмодзи строго по смыслу.
-- От второго лица. Сразу к действию — без вступлений и повторений.
-- Текст должен умещаться в 4-6 строк на экране.
+КАК ПИСАТЬ — коротко и динамично:
+- 2-3 абзаца максимум, каждый 1-2 предложения
+- Больше диалогов с тире: — Реплика! — сказал NPC.
+- 2-3 эмодзи по смыслу. От второго лица. Сразу к действию.
 
-МЕХАНИКА DnD — СТРОГО ОБЯЗАТЕЛЬНО:
+МЕХАНИКА:
+- Рискованное действие = сначала бросок кубика (TYPE=DICE), потом результат
+- Начисляй xp каждый ход (абсолютное значение): обычная сцена +5-10, бой +20-50
+- Урон от врагов: hp -5 до -20. HP не ниже 1.
 
-БРОСКИ КУБИКОВ — это сердце DnD, используй ПОСТОЯННО:
-- Любое рискованное действие ТРЕБУЕТ броска кубика ПЕРЕД тем как назвать результат
-- Атака, скрытность, убеждение, взлом, прыжок, магия — всё через бросок
-- Если игрок атакует/рискует: верни type=dice, не пиши чем кончилось — пусть бросит
-- После броска опиши результат: высокий (15+) = успех, средний (8-14) = частичный, низкий (1-7) = провал
+ФОРМАТ ОТВЕТА — строго по шаблону, никаких отклонений:
 
-ОПЫТ — начисляй КАЖДЫЙ ход обязательно:
-- Победил врага: xp +20-50, выполнил задание: xp +30-100
-- Хорошая идея или ролевой момент: xp +5-15, нашёл что-то важное: xp +10-25
-- Просто прошёл сцену без риска: xp +3-8
-- xp в char_update = абсолютное значение (текущее значение + начисление)
+Когда нужен бросок:
+STORY
+текст сцены
+END_STORY
+TYPE=DICE
+DICE=${'{'}notation:1d20,reason:Проверка Ловкости{'}'}
+DATA=${'{'}xp:${curXP+5}{'}'}
 
-УРОН: удар врага hp -5 до -20. Лечение: hp восстанавливается. HP не ниже 1.
-ЗОЛОТО: зарабатывай и трать реалистично.
-ПРЕДМЕТЫ: добавляй в инвентарь когда игрок подбирает или покупает.
+Когда даёшь выбор:
+STORY
+текст сцены
+END_STORY
+TYPE=CHOICE
+ACTIONS=⚔️ Атаковать|💬 Поговорить|🏃 Сбежать
+DATA=${'{'}xp:${curXP+8},hp:${hp.cur},gold:${charState.gold}{'}'}
 
-КРИТИЧЕСКИ ВАЖНО:
-- Отвечай ТОЛЬКО JSON объектом. Никакого текста до или после JSON.
-- НИКОГДА не пиши варианты действий в поле "story". "story" = только повествование.
-- НИКОГДА не добавляй "Пожалуйста, выбери:", "У тебя есть выбор:", нумерованные списки в story.
-- Не повторяй уже написанный текст.
-
-ФОРМАТ ОТВЕТА — строго валидный JSON, первый символ { последний символ }:
-
-Когда нужен бросок (рискованное действие):
-{"story":"текст\\n\\nтекст","type":"dice","dice":{"notation":"1d20","reason":"Проверка Ловкости"},"char_update":{"xp":${curXP+5}}}
-
-Когда выбор действия:
-{"story":"текст\\n\\nтекст","type":"choice","actions":["⚔️ Атаковать","💬 Поговорить","🏃 Сбежать"],"char_update":{"xp":${curXP+10},"hp":85,"gold":50}}
-
-Поля char_update (все необязательные, только что изменилось):
-hp, mp, xp, gold — абсолютные числа
-inventory_add: [{"name":"Меч","icon":"⚔️","qty":1,"desc":"Урон 1d6"}]
+Поле DATA — JSON с изменениями (только то что изменилось):
+hp, mp, xp, gold — числа
+inventory_add: [{"name":"Меч","icon":"⚔️","qty":1,"desc":"описание"}]
 inventory_remove: ["название"]
-equipment: {"weapon":{"name":"Меч","icon":"⚔️","stat":"Урон: 1d8"}} или {"weapon":null} чтобы снять
-stats: {"Сила":13}  skills: [{"name":"Атака","level":2}]`;
+equipment: {"weapon":{"name":"Меч","icon":"⚔️","stat":"Урон: 1d8"}}
+stats: {"Сила":13}
+skills: [{"name":"Атака","level":2}]
+
+НЕЛЬЗЯ: писать варианты действий в STORY. STORY = только повествование.`;
 }
 
 // ══ ДВИЖОК ══
@@ -485,6 +476,57 @@ function rollDice(notation){
 // ════════════════════════════════════════════
 // 7. ENGINE — игровой движок
 // ════════════════════════════════════════════
+// ── Парсер текстового формата ──
+// Gemini возвращает plain text с разделителями, не JSON
+function parseGeminiResponse(text) {
+  const result = { story:'', type:'choice', actions:[], char_update:{} };
+
+  // Извлекаем STORY
+  const storyMatch = text.match(/STORY\s*\n([\s\S]*?)\nEND_STORY/);
+  result.story = storyMatch ? storyMatch[1].trim() : text.split('TYPE=')[0].trim();
+
+  // Тип
+  if (/TYPE=DICE/i.test(text)) result.type = 'dice';
+  else result.type = 'choice';
+
+  // Кубик
+  if (result.type === 'dice') {
+    const diceMatch = text.match(/DICE=\{([^}]+)\}/);
+    if (diceMatch) {
+      try {
+        const d = diceMatch[1];
+        const notationM = d.match(/notation[:\s]+(\S+)/);
+        const reasonM   = d.match(/reason[:\s]+(.+)/);
+        result.dice = {
+          notation: notationM ? notationM[1].replace(/,$/,'') : '1d20',
+          reason:   reasonM   ? reasonM[1].trim() : 'Бросок'
+        };
+      } catch { result.dice = {notation:'1d20', reason:'Бросок'}; }
+    } else {
+      result.dice = {notation:'1d20', reason:'Бросок'};
+    }
+  }
+
+  // Действия
+  const actionsMatch = text.match(/ACTIONS=(.+)/);
+  if (actionsMatch) {
+    result.actions = actionsMatch[1].split('|').map(a=>a.trim()).filter(Boolean);
+  }
+
+  // DATA — char_update
+  const dataMatch = text.match(/DATA=(\{[\s\S]*?\})(?:\s|$)/);
+  if (dataMatch) {
+    try { result.char_update = JSON.parse(dataMatch[1]); } catch {}
+  }
+
+  // Если вообще ничего не распарсилось — весь текст как story
+  if (!result.story) result.story = text;
+  if (result.type==='choice' && result.actions.length===0) result.actions = ['▶️ Продолжить...'];
+  return result;
+}
+
+const parsed = parseGeminiResponse(raw1);
+
 async function askDM(userMessage){
   if(state.locked) return;
   state.locked=true;
@@ -503,63 +545,14 @@ async function askDM(userMessage){
       })
     });
     const data1 = await resp1.json();
-    let raw1 = data1.content?.[0]?.text||'{}';
-    const finishReason = data1.finishReason || 'STOP';
+    const raw1 = (data1.content?.[0]?.text || '').trim();
 
-    // Если Gemini обрезал ответ по токенам — закрываем JSON вручную
-    if (finishReason === 'MAX_TOKENS') {
-      // Пытаемся восстановить обрезанный JSON: обрываем story на последнем полном предложении
-      const storyMatch = raw1.match(/"story"\s*:\s*"([\s\S]*?)(?:"|$)/);
-      if (storyMatch) {
-        const brokenStory = storyMatch[1];
-        // Обрезаем до последней точки/восклицательного/вопросительного знака
-        const lastSentence = brokenStory.replace(/\\n/g, '\n').trimEnd();
-        const cutIdx = Math.max(
-          lastSentence.lastIndexOf('.'),
-          lastSentence.lastIndexOf('!'),
-          lastSentence.lastIndexOf('?'),
-          lastSentence.lastIndexOf('…')
-        );
-        const cleanStory = cutIdx > 20 ? lastSentence.substring(0, cutIdx + 1) : lastSentence;
-        raw1 = JSON.stringify({
-          story: cleanStory.replace(/\n/g, '\n'),
-          type: 'choice',
-          actions: ['▶️ Продолжить...'],
-        });
-      }
-    }
 
-    let parsed;
-    try {
-      // Умный экстрактор: ищем первый { и последний } — вытаскиваем JSON даже если Gemini добавил текст вокруг
-      let clean = raw1.replace(/```json?\s*/gi,'').replace(/```\s*/g,'').trim();
-      const firstBrace = clean.indexOf('{');
-      const lastBrace  = clean.lastIndexOf('}');
-      if (firstBrace !== -1 && lastBrace > firstBrace) {
-        clean = clean.substring(firstBrace, lastBrace + 1);
-      }
-      parsed = JSON.parse(clean);
-    } catch {
-      // Если JSON совсем сломан — показываем raw текст как story
-      parsed = { story: raw1.replace(/\{.*\}/gs, '').trim() || raw1, type: 'choice', actions: ['▶️ Продолжить...'] };
-    }
+    const parsed = parseGeminiResponse(raw1);
 
-    if (!parsed.story || parsed.story.trim()==='{}'||parsed.story.trim()==='...') {
+    if (!parsed.story || parsed.story.trim()==='') {
       showTyping(false); state.locked=false;
       setTimeout(()=>askDM(null),1500); return;
-    }
-    // Если модель не дала actions — принудительно добавляем
-    if (parsed.type==='choice' && (!parsed.actions || parsed.actions.length===0)) {
-      parsed.actions = ['▶️ Продолжить...'];
-    }
-    // Если в story всё ещё затесались варианты действий — чистим
-    if (parsed.story) {
-      parsed.story = parsed.story
-        .replace(/Пожалуйста[^\n]*\n?/gi, '')
-        .replace(/У тебя есть выбор[^\n]*\n?/gi, '')
-        .replace(/Выбери одно из[^\n]*\n?/gi, '')
-        .replace(/\n?[\*\-•]\s*(\d\.\s*)?[🎯⚔️💬🏃🔍✨🗡️💰🌙😤😏].*$/gm, '')
-        .trim();
     }
 
     state.history.push({role:'assistant',content:raw1});
@@ -618,10 +611,8 @@ function restoreHistory(history){
     if(msg.role==='user'&&!msg.content.startsWith('Начни новое')){
       addPlayerMessage(msg.content.replace('Я выбираю: ',''));
     } else if(msg.role==='assistant'){
-      try {
-        const p=JSON.parse(msg.content.replace(/```json?\s*/gi,'').replace(/```\s*/g,'').trim());
-        if(p.story) addDMMessage(p.story);
-      } catch { if(msg.content&&msg.content!=='{}') addDMMessage(msg.content); }
+      const p = parseGeminiResponse(msg.content);
+      if(p.story) addDMMessage(p.story);
     }
   }
   askDM('Продолжай приключение. Напомни коротко где я нахожусь и что происходит, затем дай варианты.');
