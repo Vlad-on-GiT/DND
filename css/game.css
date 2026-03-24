@@ -211,3 +211,26 @@ header p{font-size:12px;color:var(--text-dim);margin-top:0;font-style:italic;opa
   .panel-card{min-width:200px;flex:1;}
   .doll-wrap{width:120px;height:170px;}
 }
+
+/* ── СВОЁ ДЕЙСТВИЕ ── */
+.action-btn--custom{
+  margin-top:6px;
+  opacity:0.75;
+  border-style:dashed;
+  font-size:13px;
+}
+.action-btn--custom:hover{ opacity:1; }
+.custom-action-row{
+  display:flex;gap:8px;margin-top:8px;align-items:center;
+}
+.custom-action-input{
+  flex:1;background:color-mix(in srgb,var(--panel-bg) 80%,transparent);
+  border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:var(--font-body);font-size:14px;
+  padding:9px 14px;outline:none;transition:border-color 0.2s;
+}
+.custom-action-input:focus{ border-color:var(--accent); }
+.custom-action-input::placeholder{ color:var(--text-dim); }
+.action-btn--send{
+  flex-shrink:0;padding:9px 18px;font-size:13px;
+}
