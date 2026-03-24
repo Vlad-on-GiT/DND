@@ -298,7 +298,26 @@ function applyCharUpdate(update){
     changed=true;
   }
 
-  if(update.inventory_add){ update.inventory_add.forEach(item=>{ const ex=charState.inventory.find(i=>i.name===item.name); if(ex) ex.qty=(ex.qty||1)+(item.qty||1); else charState.inventory.push({...item,qty:item.qty||1}); }); changed=true; }
+  if(update.inventory_add){
+    update.inventory_add.forEach(raw=>{
+      // Normalize: Gemini sometimes sends a plain string instead of an object
+      const item = typeof raw === 'string' ? {name:raw, icon:'📦', qty:1, desc:''} : raw;
+      if (!item.name) return; // skip malformed entries
+      // Skip if this item is also being removed in the same update (Gemini contradiction guard)
+      if (update.inventory_remove) {
+        const alsoRemoving = update.inventory_remove.some(r => {
+          const rn = typeof r === 'string' ? r : (r.name||'');
+          return rn.toLowerCase().trim() === item.name.toLowerCase().trim();
+        });
+        if (alsoRemoving) { console.warn('[DM] inventory_add+remove conflict, skipping add for:', item.name); return; }
+      }
+      const ex = charState.inventory.find(i => i.name === item.name)
+              || charState.inventory.find(i => i.name.toLowerCase().trim() === item.name.toLowerCase().trim());
+      if (ex) ex.qty = (ex.qty||1) + (item.qty||1);
+      else charState.inventory.push({icon:'📦', desc:'', ...item, qty:item.qty||1});
+    });
+    changed=true;
+  }
 
   if(update.inventory_remove){
     update.inventory_remove.forEach(entry=>{
@@ -693,7 +712,13 @@ async function askDM(userMessage){
       setTimeout(()=>askDM(null),1500); return;
     }
 
-    state.history.push({role:'assistant',content:raw1});
+    // Dedup: don't push if last assistant message is identical (retry/corruption guard)
+    const lastMsg = state.history[state.history.length-1];
+    if (!lastMsg || lastMsg.role !== 'assistant' || lastMsg.content !== raw1) {
+      state.history.push({role:'assistant',content:raw1});
+    }
+    // Trim history to last 30 entries to avoid context size / corruption issues
+    if (state.history.length > 30) state.history = state.history.slice(-30);
     showTyping(false);
     addDMMessage(parsed.story);
     if(parsed.char_update) applyCharUpdate(parsed.char_update);
@@ -790,10 +815,7 @@ document.getElementById('btn-logout').addEventListener('click',async()=>{ await 
 
 
 
-document.addEventListener('mouseout', function(e) {
-  if (e.target.closest('[data-has-tip]'))  hideGlobalTooltip();
-  if (e.target.closest('[data-item-name]')) hideItemTooltip();
-});
+// tooltip hide logic is handled by tooltips.js
 
 
 window.goToMenu=()=>{ window.location.href='menu.html'; };
