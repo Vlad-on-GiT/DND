@@ -120,7 +120,9 @@ onAuthStateChanged(auth, user => {
 function saveCharState(){
   try {
     const key = 'dnd_char_' + (state.uid||'guest') + '_' + (state.gameId||'');
-    localStorage.setItem(key, JSON.stringify({ charState, playerLevel, pendingLevelUpPoints }));
+    const swCls = document.body.classList.contains('sw-jedi') ? 'sw-jedi'
+               : document.body.classList.contains('sw-sith') ? 'sw-sith' : null;
+    localStorage.setItem(key, JSON.stringify({ charState, playerLevel, pendingLevelUpPoints, swClass: swCls }));
   } catch(e){ console.warn('saveCharState:', e); }
 }
 
@@ -133,6 +135,11 @@ function loadCharState(){
     if (d.charState)    Object.assign(charState, d.charState);
     if (d.playerLevel)  playerLevel = d.playerLevel;
     if (d.pendingLevelUpPoints) pendingLevelUpPoints = d.pendingLevelUpPoints;
+    // Restore SW character colour class
+    if (d.swClass) {
+      document.body.classList.remove('sw-jedi','sw-sith');
+      document.body.classList.add(d.swClass);
+    }
     return true;
   } catch(e){ return false; }
 }
@@ -206,11 +213,16 @@ function setupWorld(d){
     // SW: apply character colour theme
     if (d.worldTheme === 'starwars') {
       document.body.classList.remove('sw-jedi','sw-sith');
-      const cc = (d.charClass||'').toLowerCase();
-      if (cc.includes('оби') || cc.includes('энакин') || cc.includes('anakin') || cc.includes('obi')) {
-        document.body.classList.add('sw-jedi');
-      } else if (cc.includes('джанго') || cc.includes('палпатин') || cc.includes('jango') || cc.includes('palpatine')) {
-        document.body.classList.add('sw-sith');
+      // Prefer explicit saved class, fall back to detecting from charClass name
+      if (d.swClass) {
+        document.body.classList.add(d.swClass);
+      } else {
+        const cc = (d.charClass||'').toLowerCase();
+        if (cc.includes('оби') || cc.includes('энакин') || cc.includes('anakin') || cc.includes('obi')) {
+          document.body.classList.add('sw-jedi');
+        } else if (cc.includes('джанго') || cc.includes('палпатин') || cc.includes('jango') || cc.includes('palpatine')) {
+          document.body.classList.add('sw-sith');
+        }
       }
     }
   }
@@ -542,6 +554,8 @@ async function saveProgress(){
   if(!state.uid||state.history.length===0) return;
   try {
     const titleEl=document.getElementById('game-title');
+    const swClass = document.body.classList.contains('sw-jedi') ? 'sw-jedi'
+                 : document.body.classList.contains('sw-sith') ? 'sw-sith' : null;
     await setDoc(doc(db,'players',state.uid,'games',state.gameId),{
       gameId:        state.gameId,
       title:         titleEl.textContent+' · '+new Date().toLocaleDateString('ru'),
@@ -551,6 +565,8 @@ async function saveProgress(){
       worldTitle:    titleEl.textContent,
       worldSubtitle: document.getElementById('game-subtitle').textContent,
       thinkingText:  state.thinkingText,
+      charClass:     document.getElementById('portrait-class')?.textContent || null,
+      swClass:       swClass,
       savedAt:       serverTimestamp(),
     });
     const el=document.getElementById('save-indicator');
@@ -669,15 +685,40 @@ function scrollToActions(){
 function showTyping(v){ typing.classList.toggle('visible',v); }
 
 function addDMMessage(rawText){
-  const html = rawText
+  // Escape HTML
+  let txt = rawText
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/\r\n/g,'\n')
-    .replace(/\n{3,}/g,'\n\n')   // схлопываем 3+ переносов в 2
-    .replace(/\n\n/g,'</p><p>')  // двойной => новый абзац
-    .replace(/\n/g,'<br>');       // одинарный => br
+    .replace(/\n{3,}/g,'\n\n');
+
+  // Split into lines and wrap dialogue lines (starting with —) as separate paragraphs
+  const lines = txt.split('\n');
+  const paragraphs = [];
+  let currentPara = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      // Empty line = paragraph break
+      if (currentPara.length) { paragraphs.push(currentPara.join(' ')); currentPara = []; }
+    } else if (trimmed.startsWith('—') || trimmed.startsWith('-')) {
+      // Dialogue line — always its own paragraph
+      if (currentPara.length) { paragraphs.push(currentPara.join(' ')); currentPara = []; }
+      paragraphs.push(trimmed);
+    } else {
+      currentPara.push(trimmed);
+    }
+  }
+  if (currentPara.length) paragraphs.push(currentPara.join(' '));
+
+  const html = paragraphs
+    .filter(p => p.trim())
+    .map(p => '<p>' + p + '</p>')
+    .join('');
+
   const d=document.createElement('div');
   d.className='message dm-block';
-  d.innerHTML='<div class="dm-text"><p>'+html+'</p></div>';
+  d.innerHTML='<div class="dm-text">' + (html || '<p>' + txt + '</p>') + '</div>';
   log.appendChild(d); scrollBottom();
 }
 
