@@ -627,14 +627,15 @@ body.theme-starwars .action-btn:hover {
 
 /* ── КУБИК ── */
 body.theme-starwars .dice-btn {
-  border-color: rgba(200,0,10,0.45);
-  color: #ffbbbb;
-  box-shadow: inset 0 0 12px rgba(180,0,0,0.08), 0 0 10px rgba(180,0,0,0.12);
+  border-color:rgba(var(--sw-neon-rgb),0.45);
+  color:var(--sw-neon2);
+  box-shadow:inset 0 0 12px rgba(var(--sw-neon-rgb),0.08),0 0 10px rgba(var(--sw-neon-rgb),0.15);
+  background:rgba(var(--sw-neon-rgb),0.05);
 }
 body.theme-starwars .dice-btn:hover {
-  box-shadow: 0 0 22px rgba(255,20,20,0.55), 0 0 44px rgba(200,0,0,0.28);
-  color: #ffdddd;
-  border-color: var(--sw-red);
+  box-shadow:0 0 22px rgba(var(--sw-neon-rgb),0.6),0 0 44px rgba(var(--sw-neon-rgb),0.3);
+  color:var(--sw-neon2); border-color:var(--sw-neon);
+  background:rgba(var(--sw-neon-rgb),0.10);
 }
 body.theme-starwars .roll-number {
   color: var(--sw-neon2);
@@ -779,12 +780,15 @@ body.theme-starwars .action-btn:hover {
   color:var(--sw-neon2); transform:translateX(4px);
 }
 body.theme-starwars .dice-btn {
-  border-color:rgba(200,0,10,0.45); color:#ffbbbb;
-  box-shadow:inset 0 0 12px rgba(180,0,0,0.08),0 0 10px rgba(180,0,0,0.12);
+  border-color:rgba(var(--sw-neon-rgb),0.45);
+  color:var(--sw-neon2);
+  box-shadow:inset 0 0 12px rgba(var(--sw-neon-rgb),0.08),0 0 10px rgba(var(--sw-neon-rgb),0.15);
+  background:rgba(var(--sw-neon-rgb),0.05);
 }
 body.theme-starwars .dice-btn:hover {
-  box-shadow:0 0 22px rgba(255,20,20,0.55),0 0 44px rgba(200,0,0,0.28);
-  color:#ffdddd; border-color:var(--sw-red);
+  box-shadow:0 0 22px rgba(var(--sw-neon-rgb),0.6),0 0 44px rgba(var(--sw-neon-rgb),0.3);
+  color:var(--sw-neon2); border-color:var(--sw-neon);
+  background:rgba(var(--sw-neon-rgb),0.10);
 }
 body.theme-starwars .roll-number {
   color:var(--sw-neon2);
